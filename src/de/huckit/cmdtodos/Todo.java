@@ -32,4 +32,11 @@ public class Todo implements Serializable {
     public LocalDate getDate() {
         return date;
     }
+
+    public String toString() {
+        return " - Title: " + title + "\n" +
+               "   Description: " + description + "\n" +
+               "   Date created: " + date.toString() + "\n" +
+               "   Done: " + (ticked ? "yes" : "no") + "\n";
+    }
 }
