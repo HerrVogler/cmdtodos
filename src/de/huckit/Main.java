@@ -4,11 +4,9 @@ package de.huckit;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.TERMINATE;
@@ -36,7 +34,8 @@ public class Main {
                 todos = readTodos();
             }
             catch (Exception e) {
-                throw new Exception("Error");
+                System.out.println("error");
+                return;
             }
         }
 
@@ -51,7 +50,7 @@ public class Main {
 
                 break;
             case "help":
-
+                System.out.println("HiLfE");
                 break;
             case "ls":
                 commandLs(arguments);
@@ -92,15 +91,34 @@ public class Main {
         }
     }
 
-    private static void writeTodos(Serializable[] todos) throws IOException {
+    private static void writeTodos(Serializable[] todos) {
+        try {
+            deleteFileOrFolder(Paths.get(String.valueOf(new File(appdata + "\\cmdtodos\\todos"))));
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Couldn't delete files");
+        }
         for (int i = 0; i < todos.length; i++) {
             File file = new File(appdata + "\\cmdtodos\\todos\\" + i + ".todo");
 
-            deleteFileOrFolder(Paths.get(String.valueOf(file)));
+            ObjectOutputStream oos = null;
 
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
-            oos.writeObject(todos);
-            oos.close();
+            try {
+                oos = new ObjectOutputStream(new FileOutputStream(file));
+                oos.writeObject(todos);
+            }
+            catch (Exception e) {
+                System.out.println("Todo not saved");
+            }
+            finally {
+                if (oos != null) {
+                    try {
+                        oos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
     }
 
@@ -119,7 +137,7 @@ public class Main {
         return todos;
     }
 
-    public static void deleteFileOrFolder(final Path path) throws IOException {
+    private static void deleteFileOrFolder(final Path path) throws IOException {
         Files.walkFileTree(path, new SimpleFileVisitor<Path>(){
             @Override public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
                     throws IOException {
