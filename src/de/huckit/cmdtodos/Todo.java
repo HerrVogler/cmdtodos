@@ -1,4 +1,4 @@
-package de.huckit;
+package de.huckit.cmdtodos;
 
 import java.io.Serializable;
 import java.time.LocalDate;
