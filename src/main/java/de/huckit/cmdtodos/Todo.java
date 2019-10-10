@@ -41,7 +41,7 @@ public class Todo implements Serializable {
         return " - Title: " + title + "\n" +
                "   Description: " + description + "\n" +
                "   Date created: " + date.toString() + "\n" +
-               "   Done: " + (ticked ? "yes" : "no") + "\n";
+               "   Done: " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + "\n";
     }
 
     public String forList() {

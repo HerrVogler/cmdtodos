@@ -157,15 +157,15 @@ public class Main {
     }
 
     private static void list(boolean archive, List<Todo> values) {
-        String output = "\n";
+        StringBuilder output = new StringBuilder("\n");
 
         for (Todo todo : values) {
             if (archive ^ !todo.isTicked()) {
-                output += todo.forList() + "\n";
+                output.append(todo.forList()).append("\n");
             }
         }
 
-        AnsiConsole.out.println(output);
+        AnsiConsole.out.println(output.toString());
     }
 
     ////////////////// WRITE / READ //////////////////////
