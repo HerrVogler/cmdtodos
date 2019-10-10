@@ -8,6 +8,10 @@ public class Todo implements Serializable {
     private boolean ticked = false;
     private LocalDate date = LocalDate.now();
 
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+
     public Todo(String title, String description) {
         this.title = title;
         this.description = description;
@@ -41,6 +45,6 @@ public class Todo implements Serializable {
     }
 
     public String forList() {
-        return "> " + (ticked ? "✅" : "🔴") + " " + title;
+        return "> " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " " + title;
     }
 }

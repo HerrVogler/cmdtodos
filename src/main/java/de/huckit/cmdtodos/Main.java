@@ -6,6 +6,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.fusesource.jansi.AnsiConsole;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.TERMINATE;
@@ -25,7 +26,7 @@ public class Main {
 
     private static void run(String[] args) {
         if (args.length == 0) {
-            args = new String[]{"help"};
+            args = new String[]{"ls"};
         }
 
         String command = args[0];
@@ -83,7 +84,12 @@ public class Main {
     }
 
     private static void commandTick(String[] args) {
-        //// TODO: 08.10.2019
+        switch (args.length) {
+            case 1:
+
+            default:
+                throw new RuntimeException("> command should be: \"todo new <title> <description>\"");
+        }
     }
 
     private static void commandUntick(String[] arguments) {
@@ -159,7 +165,7 @@ public class Main {
             }
         }
 
-        System.out.println(output);
+        AnsiConsole.out.println(output);
     }
 
     ////////////////// WRITE / READ //////////////////////

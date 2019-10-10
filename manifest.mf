@@ -1,4 +1,0 @@
-Name: de/huckit/cmdtodos/
-Manifest-Version: 1.0
-Main-Class: de.huckit.cmdtodos.Main
-Created-By: 1.7.0_06 (Oracle Corporation)
