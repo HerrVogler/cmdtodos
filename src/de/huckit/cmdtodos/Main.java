@@ -32,7 +32,7 @@ public class Main {
         final var arguments = Arrays.copyOfRange(args, 1, args.length);
 
 
-        if (!new File(todoDir.getPath() + "\\todos.todo").exists()) {
+        if (!new File(todoDir.getPath() + "/todos.todo").exists()) {
             //noinspection ResultOfMethodCallIgnored
             todoDir.mkdirs();
         } else {
@@ -165,7 +165,7 @@ public class Main {
     ////////////////// WRITE / READ //////////////////////
 
     private static void writeTodos(List<Todo> values) {
-        File file = new File(todoDir.getPath() + "\\todos.todo");
+        File file = new File(todoDir.getPath() + "/todos.todo");
 
         if (file.exists()) {
             try {
@@ -185,7 +185,7 @@ public class Main {
     private static ArrayList<Todo> readTodos() throws IOException, ClassNotFoundException {
         ArrayList<Todo> values;
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(todoDir.getPath() + "\\todos.todo")))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(todoDir.getPath() + "/todos.todo")))) {
             Object obj = ois.readObject();
             values = (ArrayList<Todo>) obj;
         } catch (Exception e) {
