@@ -39,4 +39,8 @@ public class Todo implements Serializable {
                "   Date created: " + date.toString() + "\n" +
                "   Done: " + (ticked ? "yes" : "no") + "\n";
     }
+
+    public String forList() {
+        return "> " + (ticked ? "✅" : "🔴") + " " + title;
+    }
 }
