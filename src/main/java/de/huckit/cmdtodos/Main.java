@@ -3,9 +3,12 @@ package de.huckit.cmdtodos;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
+
 import org.fusesource.jansi.AnsiConsole;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
@@ -19,7 +22,7 @@ public class Main {
         try {
             run(args);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("\n" + e.getMessage());
             System.exit(1);
         }
     }
@@ -46,6 +49,7 @@ public class Main {
 
         switch (command.toLowerCase()) {
             case "new":
+            case "add":
                 commandNew(arguments);
                 break;
             case "tick":
@@ -80,16 +84,65 @@ public class Main {
         }
 
         writeTodos(todos);
-        System.out.println("> Todo added successfully");
+        System.out.println("\n> Todo added successfully");
     }
 
     private static void commandTick(String[] args) {
-        switch (args.length) {
-            case 1:
+        Scanner sc = new Scanner(System.in);
 
-            default:
-                throw new RuntimeException("> command should be: \"todo new <title> <description>\"");
+        ArrayList<Todo> values = new ArrayList<>(archive(false));
+        ArrayList<Todo> results = new ArrayList<>();
+        ArrayList<Integer> indexes = new ArrayList<>();
+
+        if (args.length == 1) {
+            for (int i = 0; i < values.size(); i++) {
+                if (args[0].equals(values.get(i).getTitle())) {
+                    results.add(values.get(i));
+                    indexes.add(i);
+                }
+            }
+
+            switch (results.size()) {
+                case 0:
+                    throw new RuntimeException("> could not find Todo (Hint: it's case sensitive\n" +
+                                               "> to see which todo can be ticked type: \"todo ls [filter]\"");
+                case 1:
+                    //tick // untick;
+                    break;
+                default:
+                    boolean run = true;
+
+                    while (run) {
+                        run = false;
+
+                        System.out.println("\n> There are more than one Todo with the same name");
+                        System.out.println("> Please choose:\n");
+
+                        for (int i = 0; i < results.size(); i++) {
+                            System.out.print((i + 1) + "." + results.get(i) + "\n"); // TODO: 10.10.2019 (toString)
+                        }
+
+                        System.out.print("> ");
+                        int input = Integer.parseInt(sc.nextLine());
+                        System.out.println("\n"); // TODO: 10.10.2019  next line or not
+
+                        if ((0 < input) && (input <= results.size())) {
+                            //gg
+                        }
+                        else {                             // RED                             // RESET
+                            AnsiConsole.out.println("> " + "\u001B[31m" + "no valid entry" + "\u001B[0m" + "\n");
+                            run = true;
+                        }
+                    }
+
+                    break;
+            }
         }
+        else {
+            throw new RuntimeException("> command should be: \"todo tick <title>\"");
+        }
+
+        writeTodos(todos); // TODO: 10.10.2019
     }
 
     private static void commandUntick(String[] arguments) {
@@ -104,24 +157,26 @@ public class Main {
     private static void commandLs(String[] args) {
         switch (args.length) {
             case 0:
-                list(false, todos);
+                list(archive(false));
                 break;
             case 1:
                 switch (args[0].toLowerCase()) {
                     case "archive":
-                        list(true, todos);
+                        list(archive(true));
                         break;
-                    case "oldtonew":                                 //May not be efficient to sort the list and then to decide whether to use the archive or not
-                        list(false, oldtonew(todos));
+                    case "all":
+                        list(todos);
+                    case "oldtonew":
+                        list(oldtonew(archive(false)));
                         break;
                     case "newtoold":
-                        list(false, newtoold(todos));
+                        list(newtoold(archive(false)));
                         break;
                     case "atoz":
-                        list(false, atoz(todos));
+                        list(atoz(archive(false)));
                         break;
                     case "ztoa":
-                        list(false, ztoa(todos));
+                        list(ztoa(archive(false)));
                         break;
                     default:
                         throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
@@ -133,18 +188,44 @@ public class Main {
                     throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
                 }
 
-                switch (args[1].toLowerCase()) {
-                    case "oldtonew":
-                        list(true, oldtonew(todos));
+                switch (args[0]) {
+                    case "archive":
+                        switch (args[1].toLowerCase()) {
+                            case "oldtonew":
+                                list(oldtonew(archive(true)));
+                                break;
+                            case "newtoold":
+                                list(newtoold(archive(true)));
+                                break;
+                            case "atoz":
+                                list(atoz(archive(true)));
+                                break;
+                            case "ztoa":
+                                list(ztoa(archive(true)));
+                                break;
+                            default:
+                                throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+                        }
+
                         break;
-                    case "newtoold":
-                        list(true, newtoold(todos));
-                        break;
-                    case "atoz":
-                        list(true, atoz(todos));
-                        break;
-                    case "ztoa":
-                        list(true, ztoa(todos));
+                    case "all":
+                        switch (args[1].toLowerCase()) {
+                            case "oldtonew":
+                                list(oldtonew(todos));
+                                break;
+                            case "newtoold":
+                                list(newtoold(todos));
+                                break;
+                            case "atoz":
+                                list(atoz(todos));
+                                break;
+                            case "ztoa":
+                                list(ztoa(todos));
+                                break;
+                            default:
+                                throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+                        }
+
                         break;
                     default:
                         throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
@@ -156,16 +237,32 @@ public class Main {
         }
     }
 
-    private static void list(boolean archive, List<Todo> values) {
+    private static void list(List<Todo> values) {
         StringBuilder output = new StringBuilder("\n");
 
         for (Todo todo : values) {
-            if (archive ^ !todo.isTicked()) {
-                output.append(todo.forList()).append("\n");
+            output.append(todo.forList()).append("\n");
+        }
+
+        AnsiConsole.out.print(output);
+    }
+
+    private static List<Todo> archive(boolean archive) {
+        List<Todo> values = new ArrayList<>();
+
+        for (Todo todo : todos) {
+            if (archive) {
+                if (todo.isTicked()) {
+                    values.add(todo);
+                }
+            } else {
+                if (!todo.isTicked()) {
+                    values.add(todo);
+                }
             }
         }
 
-        AnsiConsole.out.println(output.toString());
+        return values;
     }
 
     ////////////////// WRITE / READ //////////////////////
@@ -230,7 +327,7 @@ public class Main {
         });
     }
 
-    ///////////////////// ARGUMENTS ////////////////////////
+    ///////////////////// ARGUMENTS //////////////////////// todo (sorting doesnt work)
 
     private static List<Todo> newtoold(List<Todo> values) {
         boolean run = true;
