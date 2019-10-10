@@ -1,39 +1,45 @@
 package de.huckit.cmdtodos;
 
-
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.TERMINATE;
 
 public class Main {
     private static List<Todo> todos = new ArrayList<Todo>();
-    private static String appdata = System.getenv("APPDATA");
-    private static File todoDir = new File(appdata + "\\cmdtodos\\todos");
+    private static File todoDir = new File(System.getProperty("user.home") + "/.cmdtodos/todos");
 
     public static void main(String[] args) {
+        try {
+            run(args);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void run(String[] args) {
         if (args.length == 0) {
-            args = new String[]{"ls"};
+            args = new String[]{"help"};
         }
 
         String command = args[0];
         final var arguments = Arrays.copyOfRange(args, 1, args.length);
 
 
-        if (!todoDir.exists()) {
+        if (!new File(todoDir.getPath() + "\\todos.todo").exists()) {
+            //noinspection ResultOfMethodCallIgnored
             todoDir.mkdirs();
         } else {
             try {
                 todos = readTodos();
             } catch (Exception e) {
-                System.out.println("error");
-                return;
+                throw new RuntimeException("> Could not read Todos");
             }
         }
 
@@ -54,16 +60,39 @@ public class Main {
                 commandLs(arguments);
                 break;
             default:
-                throw new RuntimeException("unexpected command; type \"todo help\" for help");
+                throw new RuntimeException("> unexpected command; type \"todo help\" for help");
+        }
+    }
+
+    //////////////////// COMMANDS ////////////////////////
+
+    private static void commandNew(String[] args) {
+        switch (args.length) {
+            case 1:
+                todos.add(new Todo(args[0], "no description"));
+                break;
+            case 2:
+                todos.add(new Todo(args[0], args[1]));
+                break;
+            default:
+                throw new RuntimeException("> command should be: \"todo new <title> <description>\"");
         }
 
-        writeTodos(todos.toArray(new Todo[0]));
+        writeTodos(todos);
+        System.out.println("> Todo added successfully");
+    }
+
+    private static void commandTick(String[] args) {
+        //// TODO: 08.10.2019
     }
 
     private static void commandUntick(String[] arguments) {
+        // TODO: 10.10.2019
     }
 
     private static void commandHelp(String[] arguments) {
+        System.out.println("help");
+        // TODO: 10.10.2019
     }
 
     private static void commandLs(String[] args) {
@@ -77,50 +106,52 @@ public class Main {
                         list(true, todos);
                         break;
                     case "oldtonew":                                 //May not be efficient to sort the list and then to decide whether to use the archive or not
-                        list(false, oldtonew());
+                        list(false, oldtonew(todos));
                         break;
                     case "newtoold":
-                        list(false, newtoold());
+                        list(false, newtoold(todos));
                         break;
                     case "atoz":
-                        list(false, atoz());
+                        list(false, atoz(todos));
                         break;
                     case "ztoa":
-                        list(false, ztoa());
+                        list(false, ztoa(todos));
                         break;
                     default:
-                        throw new RuntimeException("unexpected argument; type \"todo help\" for help");
+                        throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
                 }
 
                 break;
             case 2:
                 if (!args[0].toLowerCase().equals("archive")) {
-                    throw new RuntimeException("unexpected argument; type \"todo help\" for help");
+                    throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
                 }
 
                 switch (args[1].toLowerCase()) {
                     case "oldtonew":
-                        list(true, oldtonew());
+                        list(true, oldtonew(todos));
                         break;
                     case "newtoold":
-                        list(true, newtoold());
+                        list(true, newtoold(todos));
                         break;
                     case "atoz":
-                        list(true, atoz());
+                        list(true, atoz(todos));
                         break;
                     case "ztoa":
-                        list(true, ztoa());
+                        list(true, ztoa(todos));
                         break;
                     default:
-                        throw new RuntimeException("unexpected argument; type \"todo help\" for help");
+                        throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
                 }
 
                 break;
+            default:
+                throw new RuntimeException("> too many arguments; type \"todo help\" for help");
         }
     }
 
     private static void list(boolean archive, List<Todo> values) {
-        String output = "";
+        String output = "\n";
 
         for (Todo todo : values) {
             if (archive ^ !todo.isTicked()) {
@@ -131,60 +162,37 @@ public class Main {
         System.out.println(output);
     }
 
-    private static void commandTick(String[] args) {
-        //// TODO: 08.10.2019
-    }
+    ////////////////// WRITE / READ //////////////////////
 
-    private static void commandNew(String[] args) {
-        switch (args.length) {
-            case 1:
-                todos.add(new Todo(args[0], "no description"));
-                break;
-            case 2:
-                todos.add(new Todo(args[0], args[1]));
-                break;
-            default:
-                throw new RuntimeException("command should be: \"todo new <title> <description>\"");
-        }
-    }
+    private static void writeTodos(List<Todo> values) {
+        File file = new File(todoDir.getPath() + "\\todos.todo");
 
-    private static void writeTodos(Serializable[] todos) {
-        try {
-            deleteFileOrFolder(Paths.get(todoDir.getPath()));
-            todoDir.mkdirs();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Couldn't delete files");
-        }
-
-        for (int i = 0; i < todos.length; i++) {
-            File file = new File(todoDir.getPath() + "\\" + i + ".todo");
-
-            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))){
-                oos.writeObject(todos[i]);
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("Todo not saved");
+        if (file.exists()) {
+            try {
+                deleteFileOrFolder(Paths.get(file.getPath()));
+            } catch (IOException e) {
+                throw new RuntimeException("> Could not overwrite files");
             }
+        }
+
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+            oos.writeObject(values);
+        } catch (Exception e) {
+            throw new RuntimeException("> Todos could not be saved");
         }
     }
 
     private static ArrayList<Todo> readTodos() throws IOException, ClassNotFoundException {
-        ArrayList<Todo> todos = new ArrayList<Todo>();
-        int length = Objects.requireNonNull(new File(appdata + "\\cmdtodos\\todos").listFiles()).length;
+        ArrayList<Todo> values;
 
-        for (int i = 0; i < length; i++) {
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(appdata + "\\cmdtodos\\todos\\" + i + ".todo")))) {
-                Object obj = ois.readObject();
-                todos.add((Todo) obj);
-            } catch (Exception e) {
-                System.out.println("catch bei readTodos()");
-                e.printStackTrace();
-            }
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(todoDir.getPath() + "\\todos.todo")))) {
+            Object obj = ois.readObject();
+            values = (ArrayList<Todo>) obj;
+        } catch (Exception e) {
+            throw new RuntimeException();
         }
 
-        return todos;
+        return values;
     }
 
     private static void deleteFileOrFolder(final Path path) throws IOException {
@@ -216,23 +224,54 @@ public class Main {
         });
     }
 
-    ;
+    ///////////////////// ARGUMENTS ////////////////////////
 
-    private static List<Todo> newtoold() {
-        //
-        return todos;
-    }
-
-    private static List<Todo> oldtonew() {
-        //
-        return todos;
-    }
-
-    private static List<Todo> atoz() {
-        List<Todo> values = new ArrayList<>(todos);
+    private static List<Todo> newtoold(List<Todo> values) {
         boolean run = true;
+
         while (run) {
             run = false;
+
+            for (int i = 0; i < values.size() - 1; i++) {
+                if (values.get(i + 1).getDate().isBefore(values.get(i).getDate())) {
+                    Todo helper = values.get(i + 1);
+                    values.set(i + 1, values.get(i));
+                    values.set(i, helper);
+
+                    run = true;
+                }
+            }
+        }
+
+        return values;
+    }
+
+    private static List<Todo> oldtonew(List<Todo> values) {
+        boolean run = true;
+
+        while (run) {
+            run = false;
+
+            for (int i = 0; i < values.size() - 1; i++) {
+                if (values.get(i + 1).getDate().isAfter(values.get(i).getDate())) {
+                    Todo helper = values.get(i + 1);
+                    values.set(i + 1, values.get(i));
+                    values.set(i, helper);
+
+                    run = true;
+                }
+            }
+        }
+
+        return values;
+    }
+
+    private static List<Todo> atoz(List<Todo> values) {
+        boolean run = true;
+
+        while (run) {
+            run = false;
+
             for (int i = 0; i < values.size() - 1; i++) {
                 if (values.get(i + 1).getTitle().compareTo(values.get(i).getTitle()) < 0) {
                     Todo helper = values.get(i + 1);
@@ -247,8 +286,23 @@ public class Main {
         return values;
     }
 
-    private static List<Todo> ztoa() {
-        //
-        return todos;
+    private static List<Todo> ztoa(List<Todo> values) {
+        boolean run = true;
+
+        while (run) {
+            run = false;
+
+            for (int i = 0; i < values.size() - 1; i++) {
+                if (values.get(i + 1).getTitle().compareTo(values.get(i).getTitle()) > 0) {
+                    Todo helper = values.get(i + 1);
+                    values.set(i + 1, values.get(i));
+                    values.set(i, helper);
+
+                    run = true;
+                }
+            }
+        }
+
+        return values;
     }
 }
