@@ -1,6 +1,7 @@
 package de.huckit.cmdtodos;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.SQLOutput;
@@ -11,12 +12,18 @@ import java.util.Scanner;
 
 import org.fusesource.jansi.AnsiConsole;
 
+import javax.management.relation.RoleUnresolved;
+
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.TERMINATE;
 
 public class Main {
     private static List<Todo> todos = new ArrayList<Todo>();
     private static File todoDir = new File(System.getProperty("user.home") + "/.cmdtodos/todos");
+
+    private static String ANSI_RED = "\u001B[31m";
+    private static String ANSI_GREEN = "\u001B[32m";
+    private static String ANSI_RESET = "\u001B[0m";
 
     public static void main(String[] args) {
         try {
@@ -53,16 +60,25 @@ public class Main {
                 commandNew(arguments);
                 break;
             case "tick":
-                commandTick(arguments);
+                commandTickAndUntick(arguments, false);
                 break;
             case "untick":
-                commandUntick(arguments);
+                commandTickAndUntick(arguments, true);
                 break;
             case "help":
                 commandHelp(arguments);
                 break;
             case "ls":
                 commandLs(arguments);
+                break;
+            case "show":
+                commandShow(arguments);
+                break;
+            case "delete":
+
+                break;
+            case "deleteAll":
+                commandDeleteAll();
                 break;
             default:
                 throw new RuntimeException("> unexpected command; type \"todo help\" for help");
@@ -74,10 +90,10 @@ public class Main {
     private static void commandNew(String[] args) {
         switch (args.length) {
             case 1:
-                todos.add(new Todo(args[0], "no description"));
+                todos.add(new Todo(args[0], "no description", createID()));
                 break;
             case 2:
-                todos.add(new Todo(args[0], args[1]));
+                todos.add(new Todo(args[0], args[1], createID()));
                 break;
             default:
                 throw new RuntimeException("> command should be: \"todo new <title> <description>\"");
@@ -87,27 +103,30 @@ public class Main {
         System.out.println("\n> Todo added successfully");
     }
 
-    private static void commandTick(String[] args) {
+    private static void commandTickAndUntick(String[] args, boolean archive) {
         Scanner sc = new Scanner(System.in);
 
-        ArrayList<Todo> values = new ArrayList<>(archive(false));
+        ArrayList<Todo> values = new ArrayList<>(archive(archive));
         ArrayList<Todo> results = new ArrayList<>();
-        ArrayList<Integer> indexes = new ArrayList<>();
+
+        if (values.size() == 0) {
+            throw new RuntimeException("> there are no Todos to be " + (archive ? "unticked" : "ticked"));
+        }
 
         if (args.length == 1) {
-            for (int i = 0; i < values.size(); i++) {
-                if (args[0].equals(values.get(i).getTitle())) {
-                    results.add(values.get(i));
-                    indexes.add(i);
+            for (Todo value : values) {
+                if (args[0].equals(value.getTitle())) {
+                    results.add(value);
                 }
             }
 
             switch (results.size()) {
                 case 0:
-                    throw new RuntimeException("> could not find Todo (Hint: it's case sensitive\n" +
-                                               "> to see which todo can be ticked type: \"todo ls [filter]\"");
+                    throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)\n" +
+                                               "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: \"todo ls" + (archive ? " archive" : "") + " [filter]\"");
                 case 1:
-                    //tick // untick;
+                    tickAndUntick(results.get(0).getID(), archive);
+
                     break;
                 default:
                     boolean run = true;
@@ -115,22 +134,34 @@ public class Main {
                     while (run) {
                         run = false;
 
-                        System.out.println("\n> There are more than one Todo with the same name");
-                        System.out.println("> Please choose:\n");
+                        System.out.println("\n> there are more than one Todo with the same name");
+                        System.out.println("> please choose:\n");
 
-                        for (int i = 0; i < results.size(); i++) {
-                            System.out.print((i + 1) + "." + results.get(i) + "\n"); // TODO: 10.10.2019 (toString)
+                        for (Todo todo : results) {
+                            AnsiConsole.out.println(todo.toString());
                         }
 
+                        System.out.println("> enter ID");
                         System.out.print("> ");
-                        int input = Integer.parseInt(sc.nextLine());
-                        System.out.println("\n"); // TODO: 10.10.2019  next line or not
+                        String input = (sc.nextLine());
 
-                        if ((0 < input) && (input <= results.size())) {
-                            //gg
+                        if (input.equals("exit")) {
+                            throw new RuntimeException("");
                         }
-                        else {                             // RED                             // RESET
-                            AnsiConsole.out.println("> " + "\u001B[31m" + "no valid entry" + "\u001B[0m" + "\n");
+
+                        long number = Long.parseLong(input);
+
+                        boolean wrong = true;
+                        for (Todo result : results) {
+                            if (number == result.getID()) {
+                                tickAndUntick(number, archive);
+                                wrong = false;
+                            }
+                        }
+
+                        if (wrong) {
+                            System.out.println();
+                            AnsiConsole.out.println("> " + ANSI_RED + "no valid entry" + ANSI_RESET);
                             run = true;
                         }
                     }
@@ -139,14 +170,53 @@ public class Main {
             }
         }
         else {
-            throw new RuntimeException("> command should be: \"todo tick <title>\"");
+            throw new RuntimeException("> command should be: \"todo " + (archive ? "untick" : "tick") + " <title>\"");
         }
 
-        writeTodos(todos); // TODO: 10.10.2019
+        writeTodos(todos);
     }
 
-    private static void commandUntick(String[] arguments) {
-        // TODO: 10.10.2019
+    private static void commandShow(String[] args) {
+        ArrayList<Todo> values;
+
+        if (args.length == 1) {
+            values = new ArrayList<>(findTodoByTitle(todos, args[0]));
+
+            System.out.println();
+
+            for (Todo value : values) {
+                AnsiConsole.out.println(value.toString());
+            }
+        } else {
+            throw new RuntimeException("> command should be: todo show <title>");
+        }
+    }
+
+    private static void commandDelete() {
+        // TODO: 11.10.2019
+    }
+
+    private static void commandDeleteAll(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        if (args.length > 0) {
+            throw new RuntimeException("> command should be: \"todo deleteAll\"");
+        }
+
+        System.out.println("> do you really want to delete all Todos?");
+        System.out.println("> type \"DELETE\" to confirm");
+        System.out.print("> ");
+
+        if (sc.nextLine().equals("DELETE")) {
+            try {
+                deleteFileOrFolder(Paths.get(todoDir.getPath()));
+            } catch (IOException e) {
+                throw new RuntimeException("> could not delete everything");
+            }
+        }
+        else {
+            throw new RuntimeException("> \"DELETE\" was not entered correctly");
+        }
     }
 
     private static void commandHelp(String[] arguments) {
@@ -165,7 +235,8 @@ public class Main {
                         list(archive(true));
                         break;
                     case "all":
-                        list(todos);
+                        list(all());
+                        break;
                     case "oldtonew":
                         list(oldtonew(archive(false)));
                         break;
@@ -211,16 +282,16 @@ public class Main {
                     case "all":
                         switch (args[1].toLowerCase()) {
                             case "oldtonew":
-                                list(oldtonew(todos));
+                                list(oldtonew(all()));
                                 break;
                             case "newtoold":
-                                list(newtoold(todos));
+                                list(newtoold(all()));
                                 break;
                             case "atoz":
-                                list(atoz(todos));
+                                list(atoz(all()));
                                 break;
                             case "ztoa":
-                                list(ztoa(todos));
+                                list(ztoa(all()));
                                 break;
                             default:
                                 throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
@@ -265,6 +336,47 @@ public class Main {
         return values;
     }
 
+    private static List<Todo> all() {
+        ArrayList<Todo> values = new ArrayList<>(archive(false));
+
+        values.addAll(archive(true));
+
+        return values;
+    }
+
+    private static int getIndexOfTodo(long id) {
+        for (int i = 0; i < todos.size(); i++) {
+            if (todos.get(i).getID() == id) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static List<Todo> findTodoByTitle(List<Todo> input, String title) {
+        ArrayList<Todo> values = new ArrayList<>();
+
+        for (Todo todo : input) {
+            if (todo.getTitle().equals(title)) {
+                values.add(todo);
+            }
+        }
+
+        return values;
+    }
+
+    private static void tickAndUntick(long id, boolean archive) {
+        String ticked = "(" + ANSI_RED + "X" + ANSI_RESET + " -> " + ANSI_GREEN + "O" + ANSI_RESET + ")", unticked = "(" + ANSI_GREEN + "O" + ANSI_RESET + " -> " + ANSI_RED + "X" + ANSI_RESET + ")";
+
+        todos.get(getIndexOfTodo(id)).setTicked(!archive);
+        AnsiConsole.out.println("\n> " + (archive ? unticked : ticked));
+    }
+
+    private static void thereAreMoreTodos() {
+        // TODO: 11.10.2019
+    }
+
     ////////////////// WRITE / READ //////////////////////
 
     private static void writeTodos(List<Todo> values) {
@@ -298,6 +410,38 @@ public class Main {
         return values;
     }
 
+    private static long createID() {
+        long number;
+        File file = new File(todoDir + "/id.todo");
+
+        if (!file.exists()) {
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                file.createNewFile();
+
+                number = 1000;
+            } catch (IOException e) {
+                throw new RuntimeException("error");
+            }
+        }
+        else {
+             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                 number = Long.parseLong(reader.readLine()) + 1;
+             } catch (IOException e) {
+                throw new RuntimeException("error at else bufferedReader create ID");
+            }
+        }
+
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+            writer.write("" + number);
+        } catch (IOException e) {
+            throw new RuntimeException("error at bufferedWriter create ID");
+        }
+
+        return number;
+        // TODO: 11.10.2019
+    }
+
     private static void deleteFileOrFolder(final Path path) throws IOException {
         Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
             @Override
@@ -327,7 +471,7 @@ public class Main {
         });
     }
 
-    ///////////////////// ARGUMENTS //////////////////////// todo (sorting doesnt work)
+    ///////////////////// ARGUMENTS ////////////////////////
 
     private static List<Todo> newtoold(List<Todo> values) {
         boolean run = true;
@@ -347,7 +491,7 @@ public class Main {
         }
 
         return values;
-    }
+    } // TODO: 11.10.2019 should include time
 
     private static List<Todo> oldtonew(List<Todo> values) {
         boolean run = true;
