@@ -1,18 +1,15 @@
 package de.huckit.cmdtodos;
 
+import org.fusesource.jansi.AnsiConsole;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-
-import org.fusesource.jansi.AnsiConsole;
-
-import javax.management.relation.RoleUnresolved;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.TERMINATE;
@@ -24,6 +21,23 @@ public class Main {
     private static String ANSI_RED = "\u001B[31m";
     private static String ANSI_GREEN = "\u001B[32m";
     private static String ANSI_RESET = "\u001B[0m";
+
+
+    /*
+
+    public static void main(String[] args) throws JsonProcessingException {
+        final var mapper = new ObjectMapper();
+        System.out.println(mapper
+                .valueToTree(new Todo("Hello", "Hello", 1)));
+        final var json = "{\"id\":1,\"title\":\"Hello\",\"ticked\":false,\"date\":{\"year\":2019,\"month\":\"OCTOBER\",\"chronology\":{\"id\":\"ISO\",\"calendarType\":\"iso8601\"},\"era\":\"CE\",\"leapYear\":false,\"dayOfWeek\":\"FRIDAY\",\"dayOfYear\":284,\"monthValue\":10,\"dayOfMonth\":11}}";
+        final var jsonNode = mapper.readTree(json);
+        final var todo = mapper.treeToValue(jsonNode, Todo.class);
+
+
+        System.out.println(todo.getTitle());
+    }
+
+     */
 
     public static void main(String[] args) {
         try {
@@ -123,9 +137,9 @@ public class Main {
             switch (results.size()) {
                 case 0:
                     throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)\n" +
-                                               "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: \"todo ls" + (archive ? " archive" : "") + " [filter]\"");
+                            "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: \"todo ls" + (archive ? " archive" : "") + " [filter]\"");
                 case 1:
-                    tickAndUntick(results.get(0).getID(), archive);
+                    tickAndUntick(results.get(0).getId(), archive);
 
                     break;
                 default:
@@ -149,11 +163,17 @@ public class Main {
                             throw new RuntimeException("");
                         }
 
-                        long number = Long.parseLong(input);
+
+                        long number;
+                        try {
+                            number = Long.parseLong(input);
+                        } catch (Exception e) {
+                            number = 0;
+                        }
 
                         boolean wrong = true;
                         for (Todo result : results) {
-                            if (number == result.getID()) {
+                            if (number == result.getId()) {
                                 tickAndUntick(number, archive);
                                 wrong = false;
                             }
@@ -168,8 +188,7 @@ public class Main {
 
                     break;
             }
-        }
-        else {
+        } else {
             throw new RuntimeException("> command should be: \"todo " + (archive ? "untick" : "tick") + " <title>\"");
         }
 
@@ -213,8 +232,7 @@ public class Main {
             } catch (IOException e) {
                 throw new RuntimeException("> could not delete everything");
             }
-        }
-        else {
+        } else {
             throw new RuntimeException("> \"DELETE\" was not entered correctly");
         }
     }
@@ -346,7 +364,7 @@ public class Main {
 
     private static int getIndexOfTodo(long id) {
         for (int i = 0; i < todos.size(); i++) {
-            if (todos.get(i).getID() == id) {
+            if (todos.get(i).getId() == id) {
                 return i;
             }
         }
@@ -397,7 +415,7 @@ public class Main {
         }
     }
 
-    private static ArrayList<Todo> readTodos() throws IOException, ClassNotFoundException {
+    private static ArrayList<Todo> readTodos() {
         ArrayList<Todo> values;
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(todoDir.getPath() + "/todos.todo")))) {
@@ -423,11 +441,10 @@ public class Main {
             } catch (IOException e) {
                 throw new RuntimeException("error");
             }
-        }
-        else {
-             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                 number = Long.parseLong(reader.readLine()) + 1;
-             } catch (IOException e) {
+        } else {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                number = Long.parseLong(reader.readLine()) + 1;
+            } catch (IOException e) {
                 throw new RuntimeException("error at else bufferedReader create ID");
             }
         }
@@ -439,7 +456,6 @@ public class Main {
         }
 
         return number;
-        // TODO: 11.10.2019
     }
 
     private static void deleteFileOrFolder(final Path path) throws IOException {
@@ -480,7 +496,7 @@ public class Main {
             run = false;
 
             for (int i = 0; i < values.size() - 1; i++) {
-                if (values.get(i + 1).getDate().isBefore(values.get(i).getDate())) {
+                if (values.get(i + 1).getDate() < values.get(i).getDate()) {
                     Todo helper = values.get(i + 1);
                     values.set(i + 1, values.get(i));
                     values.set(i, helper);
@@ -500,7 +516,8 @@ public class Main {
             run = false;
 
             for (int i = 0; i < values.size() - 1; i++) {
-                if (values.get(i + 1).getDate().isAfter(values.get(i).getDate())) {
+
+                if (values.get(i + 1).getDate() > values.get(i).getDate()) {
                     Todo helper = values.get(i + 1);
                     values.set(i + 1, values.get(i));
                     values.set(i, helper);
