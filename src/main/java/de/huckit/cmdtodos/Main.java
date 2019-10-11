@@ -2,6 +2,7 @@ package de.huckit.cmdtodos;
 
 import org.fusesource.jansi.AnsiConsole;
 
+import javax.print.attribute.standard.ReferenceUriSchemesSupported;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -15,7 +16,7 @@ import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.TERMINATE;
 
 public class Main {
-    private static List<Todo> todos = new ArrayList<Todo>();
+    private static List<Todo> todos = new ArrayList<>();
     private static File todoDir = new File(System.getProperty("user.home") + "/.cmdtodos/todos");
 
     private static String ANSI_RED = "\u001B[31m";
@@ -46,27 +47,41 @@ public class Main {
             System.out.println("\n" + e.getMessage());
             System.exit(1);
         }
-    }
+    } //todo  //  change <title or description> <actual title or ID>         // todo tick <ID>                // switch to json
 
     private static void run(String[] args) {
-        if (args.length == 0) {
-            args = new String[]{"ls"};
-        }
-
-        String command = args[0];
-        final var arguments = Arrays.copyOfRange(args, 1, args.length);
-
-
         if (!new File(todoDir.getPath() + "/todos.todo").exists()) {
             //noinspection ResultOfMethodCallIgnored
             todoDir.mkdirs();
+
+            if (args.length == 0) {
+                args = new String[]{"help"};
+            }
         } else {
+            if (args.length > 0) {
+                if (args[0].equals("aabbllrr")) {
+                    try {
+                        deleteFileOrFolder(Paths.get(todoDir.getPath()));
+                        System.out.println("\n> reseted");
+                    } catch (IOException e) {
+                        throw new RuntimeException("> could not reset cmdtodos");
+                    }
+                }
+            }
+
             try {
                 todos = readTodos();
             } catch (Exception e) {
                 throw new RuntimeException("> Could not read Todos");
             }
         }
+
+        if (args.length == 0) {
+            args = new String[]{"ls"};
+        }
+
+        String command = args[0];
+        final var arguments = Arrays.copyOfRange(args, 1, args.length);
 
         switch (command.toLowerCase()) {
             case "new":
@@ -89,7 +104,7 @@ public class Main {
                 commandShow(arguments);
                 break;
             case "delete":
-
+                commandDelete(arguments);
                 break;
             case "deleteall":
                 commandDeleteAll(arguments);
@@ -121,18 +136,14 @@ public class Main {
         Scanner sc = new Scanner(System.in);
 
         ArrayList<Todo> values = new ArrayList<>(archive(archive));
-        ArrayList<Todo> results = new ArrayList<>();
+        ArrayList<Todo> results;
 
         if (values.size() == 0) {
             throw new RuntimeException("> there are no Todos to be " + (archive ? "unticked" : "ticked"));
         }
 
         if (args.length == 1) {
-            for (Todo value : values) {
-                if (args[0].equals(value.getTitle())) {
-                    results.add(value);
-                }
-            }
+            results = new ArrayList<>(findTodoByTitle(values, args[0]));
 
             switch (results.size()) {
                 case 0:
@@ -152,7 +163,7 @@ public class Main {
                         System.out.println("> please choose:\n");
 
                         for (Todo todo : results) {
-                            AnsiConsole.out.println(todo.toString());
+                            AnsiConsole.out.println(todo);
                         }
 
                         System.out.println("> enter ID");
@@ -175,7 +186,9 @@ public class Main {
                         for (Todo result : results) {
                             if (number == result.getId()) {
                                 tickAndUntick(number, archive);
+
                                 wrong = false;
+                                break;
                             }
                         }
 
@@ -211,8 +224,75 @@ public class Main {
         }
     }
 
-    private static void commandDelete() {
-        // TODO: 11.10.2019
+    private static void commandDelete(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        ArrayList<Todo> values;
+
+        if (args.length == 1) {
+            values = new ArrayList<>(findTodoByTitle(todos, args[0]));
+
+            switch (values.size()) {
+                case 0:
+                    throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)");
+                case 1:
+                    todos.remove(values.get(0));
+                    System.out.println("\n> successfully deleted");
+                    break;
+                default:
+                    boolean run = true;
+
+                    while (run) {
+                        run = false;
+
+                        System.out.println("\n> there are more than one Todo with the same name");
+                        System.out.println("> please choose:\n");
+
+                        for (Todo todo : values) {
+                            AnsiConsole.out.println(todo);
+                        }
+
+                        System.out.println("> enter ID");
+                        System.out.print("> ");
+                        String input = (sc.nextLine());
+
+                        if (input.equals("exit")) {
+                            throw new RuntimeException("");
+                        }
+
+
+                        long number;
+                        try {
+                            number = Long.parseLong(input);
+                        } catch (Exception e) {
+                            number = 0;
+                        }
+
+                        boolean wrong = true;
+                        for (Todo todo : values) {
+                            if (number == todo.getId()) {
+                                todos.remove(getIndexOfTodo(number));
+                                System.out.println("\n> successfully deleted");
+
+                                wrong = false;
+                                break;
+                            }
+                        }
+
+                        if (wrong) {
+                            System.out.println();
+                            AnsiConsole.out.println("> " + ANSI_RED + "no valid entry" + ANSI_RESET);
+                            run = true;
+                        }
+                    }
+
+                    break;
+            }
+        } else {
+            throw new RuntimeException("> command should be: todo delete <title>");
+        }
+
+        writeTodos(todos);
     }
 
     private static void commandDeleteAll(String[] args) {
@@ -222,13 +302,19 @@ public class Main {
             throw new RuntimeException("> command should be: todo deleteAll");
         }
 
-        System.out.println("> do you really want to delete all Todos?");
-        System.out.println("> type \"DELETE\" to confirm");
-        System.out.print("> ");
+        System.out.println("\n> do you really want to delete all Todos?");
+        System.out.println("\n> type \"DELETE\" to confirm");
+        AnsiConsole.out.print("> " + ANSI_RED);
 
-        if (sc.nextLine().equals("DELETE")) {
+        String input = sc.nextLine();
+
+        AnsiConsole.out.print(ANSI_RESET);
+
+        if (input.equals("DELETE")) {
             try {
                 deleteFileOrFolder(Paths.get(todoDir.getPath()));
+
+                System.out.println("\n> everything deleted");
             } catch (IOException e) {
                 throw new RuntimeException("> could not delete everything");
             }
@@ -237,10 +323,24 @@ public class Main {
         }
     }
 
-    private static void commandHelp(String[] arguments) {
-        System.out.println("help");
+    private static void commandHelp(String[] args) {
+        if (args.length == 1) {
+            switch (args[0]) {
+                case "new":
+                case "add":
+
+                    break;
+                case "tick":
+
+                    break;
+                default:
+                    throw new RuntimeException("unexpected atribute");
+            }
+        } else {
+            throw new RuntimeException("> command should be: todo help [command]");
+        }
         // TODO: 10.10.2019
-    }
+    } // TODO: 11.10.2019
 
     private static void commandLs(String[] args) {
         switch (args.length) {
@@ -355,9 +455,9 @@ public class Main {
     }
 
     private static List<Todo> all() {
-        ArrayList<Todo> values = new ArrayList<>(archive(false));
+        ArrayList<Todo> values = new ArrayList<>(archive(true));
 
-        values.addAll(archive(true));
+        values.addAll(archive(false));
 
         return values;
     }
@@ -459,7 +559,7 @@ public class Main {
     }
 
     private static void deleteFileOrFolder(final Path path) throws IOException {
-        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(path, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
                     throws IOException {
