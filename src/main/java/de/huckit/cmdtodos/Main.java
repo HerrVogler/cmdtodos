@@ -77,8 +77,8 @@ public class Main {
             case "delete":
 
                 break;
-            case "deleteAll":
-                commandDeleteAll();
+            case "deleteall":
+                commandDeleteAll(arguments);
                 break;
             default:
                 throw new RuntimeException("> unexpected command; type \"todo help\" for help");
@@ -200,7 +200,7 @@ public class Main {
         Scanner sc = new Scanner(System.in);
 
         if (args.length > 0) {
-            throw new RuntimeException("> command should be: \"todo deleteAll\"");
+            throw new RuntimeException("> command should be: todo deleteAll");
         }
 
         System.out.println("> do you really want to delete all Todos?");
@@ -520,7 +520,7 @@ public class Main {
             run = false;
 
             for (int i = 0; i < values.size() - 1; i++) {
-                if (values.get(i + 1).getTitle().compareTo(values.get(i).getTitle()) < 0) {
+                if (values.get(i + 1).getTitle().toLowerCase().compareTo(values.get(i).getTitle().toLowerCase()) < 0) {
                     Todo helper = values.get(i + 1);
                     values.set(i + 1, values.get(i));
                     values.set(i, helper);
@@ -540,7 +540,7 @@ public class Main {
             run = false;
 
             for (int i = 0; i < values.size() - 1; i++) {
-                if (values.get(i + 1).getTitle().compareTo(values.get(i).getTitle()) > 0) {
+                if (values.get(i + 1).getTitle().toLowerCase().compareTo(values.get(i).getTitle().toLowerCase()) > 0) {
                     Todo helper = values.get(i + 1);
                     values.set(i + 1, values.get(i));
                     values.set(i, helper);
