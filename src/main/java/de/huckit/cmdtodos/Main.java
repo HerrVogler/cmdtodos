@@ -47,7 +47,7 @@ public class Main {
             System.out.println("\n" + e.getMessage());
             System.exit(1);
         }
-    } //todo  //  change <title or description> <actual title or ID>         // todo tick <ID>                // switch to json
+    } //todo  //  change <actual title/ID> <"title"/"description">          // todo tick <ID>                // switch to json
 
     private static void run(String[] args) {
         if (!new File(todoDir.getPath() + "/todos.todo").exists()) {
@@ -108,6 +108,9 @@ public class Main {
                 break;
             case "deleteall":
                 commandDeleteAll(arguments);
+                break;
+            case "sort":
+                commandSort(arguments);
                 break;
             default:
                 throw new RuntimeException("> unexpected command; type \"todo help\" for help");
@@ -323,6 +326,30 @@ public class Main {
         }
     }
 
+    private static void commandSort(String[] args) {
+        if (args.length == 1) {
+            switch (args[0]) {
+                case "newtoold":
+                    todos = newtoold(todos);
+                    break;
+                case "oldtonew":
+                    todos = oldtonew(todos);
+                    break;
+                case "atoz":
+                    todos = atoz(todos);
+                    break;
+                case "ztoa":
+                    todos = ztoa(todos);
+                    break;
+            }
+        }
+        else {
+            throw new RuntimeException("> command should be: \"todo sort <filter>\"");
+        }
+
+        writeTodos(todos);
+    } // todo: check if working
+
     private static void commandHelp(String[] args) {
         if (args.length == 1) {
             switch (args[0]) {
@@ -520,6 +547,7 @@ public class Main {
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(todoDir.getPath() + "/todos.todo")))) {
             Object obj = ois.readObject();
+            //noinspection unchecked
             values = (ArrayList<Todo>) obj;
         } catch (Exception e) {
             throw new RuntimeException();
