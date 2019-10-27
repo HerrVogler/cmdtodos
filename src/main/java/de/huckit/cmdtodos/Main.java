@@ -327,28 +327,30 @@ public class Main {
     }
 
     private static void commandSort(String[] args) {
-        if (args.length == 1) {
-            switch (args[0]) {
-                case "newtoold":
-                    todos = newtoold(todos);
-                    break;
-                case "oldtonew":
-                    todos = oldtonew(todos);
-                    break;
-                case "atoz":
-                    todos = atoz(todos);
-                    break;
-                case "ztoa":
-                    todos = ztoa(todos);
-                    break;
-            }
-        }
-        else {
+        if (args.length != 1) {
             throw new RuntimeException("> command should be: \"todo sort <filter>\"");
         }
 
+        switch (args[0]) {
+            case "newtoold":
+                todos = newtoold(todos);
+                break;
+            case "oldtonew":
+                todos = oldtonew(todos);
+                break;
+            case "atoz":
+                todos = atoz(todos);
+                break;
+            case "ztoa":
+                todos = ztoa(todos);
+                break;
+        }
+
+        System.out.println();
+        System.out.println("> sorted");
+
         writeTodos(todos);
-    } // todo: check if working
+    }
 
     private static void commandHelp(String[] args) {
         if (args.length == 1) {
@@ -400,10 +402,6 @@ public class Main {
 
                 break;
             case 2:
-                if (!args[0].toLowerCase().equals("archive")) {
-                    throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
-                }
-
                 switch (args[0]) {
                     case "archive":
                         switch (args[1].toLowerCase()) {
@@ -512,7 +510,7 @@ public class Main {
     }
 
     private static void tickAndUntick(long id, boolean archive) {
-        String ticked = "(" + ANSI_RED + "X" + ANSI_RESET + " -> " + ANSI_GREEN + "O" + ANSI_RESET + ")", unticked = "(" + ANSI_GREEN + "O" + ANSI_RESET + " -> " + ANSI_RED + "X" + ANSI_RESET + ")";
+        String ticked = ANSI_RED + "X" + ANSI_RESET + " -> " + ANSI_GREEN + "O" + ANSI_RESET, unticked = ANSI_GREEN + "O" + ANSI_RESET + " -> " + ANSI_RED + "X" + ANSI_RESET;
 
         todos.get(getIndexOfTodo(id)).setTicked(!archive);
         AnsiConsole.out.println("\n> " + (archive ? unticked : ticked));
@@ -635,7 +633,7 @@ public class Main {
         }
 
         return values;
-    } // TODO: 11.10.2019 should include time
+    }
 
     private static List<Todo> oldtonew(List<Todo> values) {
         boolean run = true;
