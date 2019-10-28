@@ -2,7 +2,6 @@ package de.huckit.cmdtodos;
 
 import org.fusesource.jansi.AnsiConsole;
 
-import javax.print.attribute.standard.ReferenceUriSchemesSupported;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -47,7 +46,7 @@ public class Main {
             System.out.println("\n" + e.getMessage());
             System.exit(1);
         }
-    } //todo  //  change <actual title/ID> <"title"/"description">          // todo tick <ID>                // switch to json
+    } //todo      switch to json
 
     private static void run(String[] args) {
         if (!new File(todoDir.getPath() + "/todos.todo").exists()) {
@@ -81,7 +80,7 @@ public class Main {
         }
 
         String command = args[0];
-        final var arguments = Arrays.copyOfRange(args, 1, args.length);
+        final String[] arguments = Arrays.copyOfRange(args, 1, args.length);
 
         switch (command.toLowerCase()) {
             case "new":
@@ -302,7 +301,7 @@ public class Main {
         Scanner sc = new Scanner(System.in);
 
         if (args.length > 0) {
-            throw new RuntimeException("> command should be: todo deleteAll");
+            throw new RuntimeException("> command should be: \"todo deleteAll\"");
         }
 
         System.out.println("\n> do you really want to delete all Todos?");
@@ -324,14 +323,14 @@ public class Main {
         } else {
             throw new RuntimeException("> \"DELETE\" was not entered correctly");
         }
-    }
+    } // TODO: 28.10.2019 deleteAll all/ticked/unticked
 
     private static void commandSort(String[] args) {
         if (args.length != 1) {
             throw new RuntimeException("> command should be: \"todo sort <filter>\"");
         }
 
-        switch (args[0]) {
+        switch (args[0].toLowerCase()) {
             case "newtoold":
                 todos = newtoold(todos);
                 break;
@@ -350,7 +349,32 @@ public class Main {
         System.out.println("> sorted");
 
         writeTodos(todos);
-    }
+    } // TODO: 28.10.2019 also being able to only sort ticked/unticked
+
+    private static void commandEdit(String[] args) {
+        String message = "> command should be: \"todo edit <\"textOf\"/\"descriptionOf\"> <title> [edit]\"";
+        switch (args.length) {
+            case 2:
+                switch (args[0].toLowerCase()) {
+                    case "textof":
+
+                        break;
+                    case "descriptionof":
+
+                        break;
+                    default:
+                        throw new RuntimeException(message);
+                }
+                break;
+            case 3:
+
+                break;
+            default:
+                throw new RuntimeException(message);
+        }
+
+        writeTodos(todos);
+    } // TODO: 28.10.2019 finish
 
     private static void commandHelp(String[] args) {
         if (args.length == 1) {
@@ -449,7 +473,7 @@ public class Main {
             default:
                 throw new RuntimeException("> too many arguments; type \"todo help\" for help");
         }
-    }
+    } // TODO: 28.10.2019 "archive" to "ticked"
 
     private static void list(List<Todo> values) {
         StringBuilder output = new StringBuilder("\n");
@@ -514,10 +538,6 @@ public class Main {
 
         todos.get(getIndexOfTodo(id)).setTicked(!archive);
         AnsiConsole.out.println("\n> " + (archive ? unticked : ticked));
-    }
-
-    private static void thereAreMoreTodos() {
-        // TODO: 11.10.2019
     }
 
     ////////////////// WRITE / READ //////////////////////
