@@ -1,5 +1,6 @@
 package de.huckit.cmdtodos;
 
+import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.*;
@@ -135,76 +136,29 @@ public class Main {
     }
 
     private static void commandTickAndUntick(String[] args, boolean archive) {
-        Scanner sc = new Scanner(System.in);
-
         ArrayList<Todo> values = new ArrayList<>(archive(archive));
         ArrayList<Todo> results;
 
-        if (values.size() == 0) {
-            throw new RuntimeException("> there are no Todos to be " + (archive ? "unticked" : "ticked"));
+        if (args.length != 1) {
+            throw new RuntimeException("> command should be: \"todo " + (archive ? "untick" : "tick") + " <title>\"");
         }
 
-        if (args.length == 1) {
-            results = new ArrayList<>(findTodoByTitle(values, args[0]));
+        if (values.size() == 0) {
+            throw new RuntimeException("> there are no todos to be " + (archive ? "unticked" : "ticked"));
+        }
 
-            switch (results.size()) {
-                case 0:
-                    throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)\n" +
-                            "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: \"todo ls" + (archive ? " archive" : "") + " [filter]\"");
-                case 1:
-                    tickAndUntick(results.get(0).getId(), archive);
+        results = new ArrayList<>(findTodoByTitle(values, args[0]));
 
-                    break;
-                default:
-                    boolean run = true;
-
-                    while (run) {
-                        run = false;
-
-                        System.out.println("\n> there are more than one Todo with the same name");
-                        System.out.println("> please choose:\n");
-
-                        for (Todo todo : results) {
-                            AnsiConsole.out.println(todo);
-                        }
-
-                        System.out.println("> enter ID");
-                        System.out.print("> ");
-                        String input = (sc.nextLine());
-
-                        if (input.equals("exit")) {
-                            throw new RuntimeException("");
-                        }
-
-
-                        long number;
-                        try {
-                            number = Long.parseLong(input);
-                        } catch (Exception e) {
-                            number = 0;
-                        }
-
-                        boolean wrong = true;
-                        for (Todo result : results) {
-                            if (number == result.getId()) {
-                                tickAndUntick(number, archive);
-
-                                wrong = false;
-                                break;
-                            }
-                        }
-
-                        if (wrong) {
-                            System.out.println();
-                            AnsiConsole.out.println("> " + ANSI_RED + "no valid entry" + ANSI_RESET);
-                            run = true;
-                        }
-                    }
-
-                    break;
-            }
-        } else {
-            throw new RuntimeException("> command should be: \"todo " + (archive ? "untick" : "tick") + " <title>\"");
+        switch (results.size()) {
+            case 0:
+                throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)\n" +
+                        "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: \"todo ls" + (archive ? " ticked" : "") + " [filter]\"");
+            case 1:
+                tickAndUntick(results.get(0).getId(), archive);
+                break;
+            default:
+                tickAndUntick(getTodoFromUser(results), archive);
+                break;
         }
 
         writeTodos(todos);
@@ -212,18 +166,19 @@ public class Main {
 
     private static void commandShow(String[] args) {
         ArrayList<Todo> values;
+        StringBuilder output = new StringBuilder("\n");
 
-        if (args.length == 1) {
-            values = new ArrayList<>(findTodoByTitle(todos, args[0]));
-
-            System.out.println();
-
-            for (Todo value : values) {
-                AnsiConsole.out.println(value.toString());
-            }
-        } else {
+        if (args.length != 1) {
             throw new RuntimeException("> command should be: todo show <title>");
         }
+
+        values = new ArrayList<>(findTodoByTitle(todos, args[0]));
+
+        for (Todo value : values) {
+            output.append(value.toString()).append("\n");
+        }
+
+        AnsiConsole.out.print(output);
     }
 
     private static void commandDelete(String[] args) {
@@ -231,68 +186,28 @@ public class Main {
 
         ArrayList<Todo> values;
 
-        if (args.length == 1) {
-            values = new ArrayList<>(findTodoByTitle(todos, args[0]));
-
-            switch (values.size()) {
-                case 0:
-                    throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)");
-                case 1:
-                    todos.remove(values.get(0));
-                    System.out.println("\n> successfully deleted");
-                    break;
-                default:
-                    boolean run = true;
-
-                    while (run) {
-                        run = false;
-
-                        System.out.println("\n> there are more than one Todo with the same name");
-                        System.out.println("> please choose:\n");
-
-                        for (Todo todo : values) {
-                            AnsiConsole.out.println(todo);
-                        }
-
-                        System.out.println("> enter ID");
-                        System.out.print("> ");
-                        String input = (sc.nextLine());
-
-                        if (input.equals("exit")) {
-                            throw new RuntimeException("");
-                        }
-
-
-                        long number;
-                        try {
-                            number = Long.parseLong(input);
-                        } catch (Exception e) {
-                            number = 0;
-                        }
-
-                        boolean wrong = true;
-                        for (Todo todo : values) {
-                            if (number == todo.getId()) {
-                                todos.remove(getIndexOfTodo(number));
-                                System.out.println("\n> successfully deleted");
-
-                                wrong = false;
-                                break;
-                            }
-                        }
-
-                        if (wrong) {
-                            System.out.println();
-                            AnsiConsole.out.println("> " + ANSI_RED + "no valid entry" + ANSI_RESET);
-                            run = true;
-                        }
-                    }
-
-                    break;
-            }
-        } else {
+        if (args.length != 1) {
             throw new RuntimeException("> command should be: todo delete <title>");
         }
+
+        if (todos.size() == 0) {
+            throw new RuntimeException("> there are no todos to be deleted");
+        }
+
+        values = new ArrayList<>(findTodoByTitle(todos, args[0]));
+
+        switch (values.size()) {
+            case 0:
+                throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)");
+            case 1:
+                todos.remove(values.get(0));
+                System.out.println("\n> successfully deleted");
+                break;
+            default:
+                todos.remove(getIndexOfTodo(getTodoFromUser(values)));
+                System.out.println("\n> successfully deleted");
+        }
+
 
         writeTodos(todos);
     }
@@ -355,6 +270,7 @@ public class Main {
         String message = "> command should be: \"todo edit <\"textOf\"/\"descriptionOf\"> <title> [edit]\"";
         switch (args.length) {
             case 2:
+                //there are more than one
                 switch (args[0].toLowerCase()) {
                     case "textof":
 
@@ -392,7 +308,6 @@ public class Main {
         } else {
             throw new RuntimeException("> command should be: todo help [command]");
         }
-        // TODO: 10.10.2019
     } // TODO: 11.10.2019
 
     private static void commandLs(String[] args) {
@@ -511,6 +426,11 @@ public class Main {
         return values;
     }
 
+    private static String edit(String edit) {
+        //gg
+        return "";
+    } // TODO: 30.10.2019
+
     private static int getIndexOfTodo(long id) {
         for (int i = 0; i < todos.size(); i++) {
             if (todos.get(i).getId() == id) {
@@ -532,6 +452,50 @@ public class Main {
 
         return values;
     }
+
+    private static long getTodoFromUser(List<Todo> results) {
+        Scanner sc = new Scanner(System.in);
+
+        long number = 0;
+        boolean run = true;
+
+        while (run) {
+            System.out.println("\n> there are more than one Todo with the same name");
+            System.out.println("> please choose:\n");
+
+            for (Todo todo : results) {
+                AnsiConsole.out.println(todo);
+            }
+
+            System.out.println("> enter ID");
+            System.out.print("> ");
+            String input = (sc.nextLine());
+
+            if (input.equals("exit")) {
+                throw new RuntimeException("\n> exited\n");
+            }
+
+            try {
+                number = Long.parseLong(input);
+            } catch (Exception e) {
+                number = 0;
+            }
+
+            for (Todo result : results) {
+                if (number == result.getId()) {
+                    run = false;
+                    break;
+                }
+            }
+
+            if (run) {
+                System.out.println();
+                AnsiConsole.out.println("> " + ANSI_RED + "no valid entry" + ANSI_RESET);
+            }
+        }
+
+        return number;
+    } // Only used in case more than one t0do is available
 
     private static void tickAndUntick(long id, boolean archive) {
         String ticked = ANSI_RED + "X" + ANSI_RESET + " -> " + ANSI_GREEN + "O" + ANSI_RESET, unticked = ANSI_GREEN + "O" + ANSI_RESET + " -> " + ANSI_RED + "X" + ANSI_RESET;
