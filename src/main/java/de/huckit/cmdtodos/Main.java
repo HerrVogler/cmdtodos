@@ -112,6 +112,8 @@ public class Main {
             case "sort":
                 commandSort(arguments);
                 break;
+            case "edit":
+                commandEdit(arguments);
             default:
                 throw new RuntimeException("> unexpected command; type \"todo help\" for help");
         }
@@ -211,13 +213,54 @@ public class Main {
     }
 
     private static void commandDeleteAll(String[] args) {
-        Scanner sc = new Scanner(System.in);
-
-        if (args.length > 0) {
-            throw new RuntimeException("> command should be: \"todo deleteAll\"");
+        if (args.length > 1) {
+            throw new RuntimeException("> command should be: \"todo deleteAll [filter]\"");
         }
 
-        System.out.println("\n> do you really want to delete all Todos?");
+        if (args.length != 0) {
+            switch (args[0].toLowerCase()) {
+                case "all":
+                    askToDelete("\n> do you really want to delete all todos?");
+                    deleteAll();
+                    break;
+                case "ticked":
+                    askToDelete("\n> do you really want to delete all ticked todos?");
+                    deleteArguments(true);
+                    break;
+                case "unticked":
+                    askToDelete("\n> do you really want to delete all unticked todos?");
+                    deleteArguments(false);
+                    break;
+                default:
+                    throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+            }
+        } else {
+            askToDelete("\n> do you really want to delete all todos?");
+            deleteAll();
+        }
+    }
+
+    private static void deleteAll() {
+        try {
+            deleteFileOrFolder(Paths.get(todoDir.getPath()));
+
+            System.out.println("\n> everything deleted");
+        } catch (IOException e) {
+            throw new RuntimeException("> could not delete everything");
+        }
+    }
+
+    private static void deleteArguments(boolean ticked) {
+        todos = new ArrayList<>(archive(!ticked));
+
+        writeTodos(todos);
+    }
+
+    private static void askToDelete(String question) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println(question);
+
         System.out.println("\n> type \"DELETE\" to confirm");
         AnsiConsole.out.print("> " + ANSI_RED);
 
@@ -225,22 +268,14 @@ public class Main {
 
         AnsiConsole.out.print(ANSI_RESET);
 
-        if (input.equals("DELETE")) {
-            try {
-                deleteFileOrFolder(Paths.get(todoDir.getPath()));
-
-                System.out.println("\n> everything deleted");
-            } catch (IOException e) {
-                throw new RuntimeException("> could not delete everything");
-            }
-        } else {
+        if (!input.equals("DELETE")) {
             throw new RuntimeException("> \"DELETE\" was not entered correctly");
         }
-    } // TODO: 28.10.2019 deleteAll all/ticked/unticked
+    }
 
     private static void commandSort(String[] args) {
         if (args.length != 1) {
-            throw new RuntimeException("> command should be: \"todo sort <filter>\"");
+            throw new RuntimeException("> command should be: \"todo sort [\"all\"/\"ticked\"/\"unticked\"] <filter>\"");
         }
 
         switch (args[0].toLowerCase()) {
