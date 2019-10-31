@@ -178,12 +178,10 @@ public class Main {
             output.append(value.toString()).append("\n");
         }
 
-        AnsiConsole.out.print(output);
+        AnsiConsole.out.print((output.length() > 1) ? output.substring(0, output.length()-1): output);
     }
 
     private static void commandDelete(String[] args) {
-        Scanner sc = new Scanner(System.in);
-
         ArrayList<Todo> values;
 
         if (args.length != 1) {
@@ -357,38 +355,56 @@ public class Main {
                                 list(ztoa(archive(true)));
                                 break;
                             default:
-                                throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+                                throw new RuntimeException(unexpectedArgument);
                         }
 
                         break;
                     case "all":
                         switch (args[1].toLowerCase()) {
                             case "oldtonew":
-                                list(oldtonew(all()));
+                                list(oldtonew(todos));
                                 break;
                             case "newtoold":
-                                list(newtoold(all()));
+                                list(newtoold(todos));
                                 break;
                             case "atoz":
-                                list(atoz(all()));
+                                list(atoz(todos));
                                 break;
                             case "ztoa":
-                                list(ztoa(all()));
+                                list(ztoa(todos));
                                 break;
                             default:
-                                throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+                                throw new RuntimeException(unexpectedArgument);
                         }
 
                         break;
+                    case "unticked":
+                        switch (args[1].toLowerCase()) {
+                            case "oldtonew":
+                                list(oldtonew(archive(false)));
+                                break;
+                            case "newtoold":
+                                list(newtoold(archive(false)));
+                                break;
+                            case "atoz":
+                                list(atoz(archive(false)));
+                                break;
+                            case "ztoa":
+                                list(ztoa(archive(false)));
+                                break;
+                            default:
+                                throw new RuntimeException(unexpectedArgument);
+                        }
+                        break;
                     default:
-                        throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+                        throw new RuntimeException(unexpectedArgument);
                 }
 
                 break;
             default:
-                throw new RuntimeException("> too many arguments; type \"todo help\" for help");
+                throw new RuntimeException("> too many arguments; type \"todo help\" for help"); // TODO: 31.10.2019 to many arguments to command should be...
         }
-    } // TODO: 28.10.2019 "archive" to "ticked"
+    }
 
     private static void list(List<Todo> values) {
         StringBuilder output = new StringBuilder("\n");
