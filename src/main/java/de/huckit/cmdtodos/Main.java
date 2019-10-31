@@ -164,6 +164,13 @@ public class Main {
         }
 
         writeTodos(todos);
+    } // TODO: 31.10.2019 is already ticked/unticked
+
+    private static void tickAndUntick(long id, boolean archive) {
+        String ticked = ANSI_RED + "X" + ANSI_RESET + " -> " + ANSI_GREEN + "O" + ANSI_RESET, unticked = ANSI_GREEN + "O" + ANSI_RESET + " -> " + ANSI_RED + "X" + ANSI_RESET;
+
+        todos.get(getIndexOfTodo(id)).setTicked(!archive);
+        AnsiConsole.out.println("\n> " + (archive ? unticked : ticked));
     }
 
     private static void commandShow(String[] args) {
@@ -291,6 +298,12 @@ public class Main {
             case "ztoa":
                 todos = ztoa(todos);
                 break;
+            case "tickedtounticked":
+                todos = tickedtounticked(todos);
+                break;
+            case "untickedtoticked":
+                todos = untickedtoticked(todos);
+                break;
         }
 
         System.out.println();
@@ -325,6 +338,11 @@ public class Main {
         writeTodos(todos);
     } // TODO: 28.10.2019 finish
 
+    private static String edit(String edit) {
+        //gg
+        return "";
+    } // TODO: 30.10.2019
+
     private static void commandHelp(String[] args) {
         if (args.length == 1) {
             switch (args[0]) {
@@ -344,17 +362,21 @@ public class Main {
     } // TODO: 11.10.2019
 
     private static void commandLs(String[] args) {
+        String unexpectedArgument = "> unexpected argument; type \"todo help\" for help";
         switch (args.length) {
             case 0:
                 list(archive(false));
                 break;
             case 1:
                 switch (args[0].toLowerCase()) {
-                    case "archive":
+                    case "unticked":
+                        list(archive(false));
+                        break;
+                    case "ticked":
                         list(archive(true));
                         break;
                     case "all":
-                        list(all());
+                        list(todos);
                         break;
                     case "oldtonew":
                         list(oldtonew(archive(false)));
@@ -369,13 +391,13 @@ public class Main {
                         list(ztoa(archive(false)));
                         break;
                     default:
-                        throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+                        throw new RuntimeException(unexpectedArgument);
                 }
 
                 break;
             case 2:
                 switch (args[0]) {
-                    case "archive":
+                    case "ticked":
                         switch (args[1].toLowerCase()) {
                             case "oldtonew":
                                 list(oldtonew(archive(true)));
@@ -451,11 +473,13 @@ public class Main {
         AnsiConsole.out.print(output);
     }
 
-    private static List<Todo> archive(boolean archive) {
+    ////////////////////// LOGIC ///////////////////////////
+
+    private static List<Todo> archive(boolean ticked) {
         List<Todo> values = new ArrayList<>();
 
         for (Todo todo : todos) {
-            if (archive) {
+            if (ticked) {
                 if (todo.isTicked()) {
                     values.add(todo);
                 }
@@ -468,19 +492,6 @@ public class Main {
 
         return values;
     }
-
-    private static List<Todo> all() {
-        ArrayList<Todo> values = new ArrayList<>(archive(true));
-
-        values.addAll(archive(false));
-
-        return values;
-    }
-
-    private static String edit(String edit) {
-        //gg
-        return "";
-    } // TODO: 30.10.2019
 
     private static int getIndexOfTodo(long id) {
         for (int i = 0; i < todos.size(); i++) {
@@ -511,7 +522,7 @@ public class Main {
         boolean run = true;
 
         while (run) {
-            System.out.println("\n> there are more than one Todo with the same name");
+            System.out.println("\n> there are more than one todo with the same name");
             System.out.println("> please choose:\n");
 
             for (Todo todo : results) {
@@ -548,12 +559,9 @@ public class Main {
         return number;
     } // Only used in case more than one t0do is available
 
-    private static void tickAndUntick(long id, boolean archive) {
-        String ticked = ANSI_RED + "X" + ANSI_RESET + " -> " + ANSI_GREEN + "O" + ANSI_RESET, unticked = ANSI_GREEN + "O" + ANSI_RESET + " -> " + ANSI_RED + "X" + ANSI_RESET;
-
-        todos.get(getIndexOfTodo(id)).setTicked(!archive);
-        AnsiConsole.out.println("\n> " + (archive ? unticked : ticked));
-    }
+    private static List<Todo> filterSelection(String[] args) {
+        return todos;
+    } // TODO: 31.10.2019 all filter switch statements in here
 
     ////////////////// WRITE / READ //////////////////////
 
@@ -648,7 +656,7 @@ public class Main {
         });
     }
 
-    ///////////////////// ARGUMENTS ////////////////////////
+    ///////////////////// FILTERS ////////////////////////
 
     private static List<Todo> newtoold(List<Todo> values) {
         boolean run = true;
@@ -730,4 +738,12 @@ public class Main {
 
         return values;
     }
+
+    private static List<Todo> tickedtounticked(List<Todo> values) {
+        return values;
+    } // TODO: 31.10.2019
+
+    private static List<Todo> untickedtoticked(List<Todo> values) {
+        return values;
+    } // TODO: 31.10.2019
 }
