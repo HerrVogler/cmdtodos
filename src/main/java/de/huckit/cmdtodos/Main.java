@@ -153,6 +153,10 @@ public class Main {
 
         switch (results.size()) {
             case 0:
+                int size = findTodoByTitle(archive(!archive), args[0]).size();
+                if (size > 0) {
+                    throw new RuntimeException("> " + ((size > 1) ? "todos" : "a todo") + " with the same name " + ((size > 1) ? "are" : "is") + " already " + (archive ? "unticked" : "ticked"));
+                }
                 throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)\n" +
                         "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: \"todo ls" + (archive ? " ticked" : "") + " [filter]\"");
             case 1:
@@ -164,7 +168,7 @@ public class Main {
         }
 
         writeTodos(todos);
-    } // TODO: 31.10.2019 is already ticked/unticked
+    }
 
     private static void tickAndUntick(long id, boolean archive) {
         String ticked = ANSI_RED + "X" + ANSI_RESET + " -> " + ANSI_GREEN + "O" + ANSI_RESET, unticked = ANSI_GREEN + "O" + ANSI_RESET + " -> " + ANSI_RED + "X" + ANSI_RESET;
@@ -257,8 +261,8 @@ public class Main {
         }
     }
 
-    private static void deleteArguments(boolean ticked) {
-        todos = new ArrayList<>(archive(!ticked));
+    private static void deleteArguments(boolean archive) {
+        todos = new ArrayList<>(archive(!archive));
 
         writeTodos(todos);
     }
@@ -281,8 +285,8 @@ public class Main {
     }
 
     private static void commandSort(String[] args) {
-        if (args.length != 1) {
-            throw new RuntimeException("> command should be: \"todo sort [\"all\"/\"ticked\"/\"unticked\"] <filter>\"");
+        if (args.length != 2) {
+            throw new RuntimeException("> command should be: \"todo sort [category] <filter>\"");
         }
 
         switch (args[0].toLowerCase()) {
@@ -504,7 +508,7 @@ public class Main {
     }
 
     private static List<Todo> findTodoByTitle(List<Todo> input, String title) {
-        ArrayList<Todo> values = new ArrayList<>();
+        List<Todo> values = new ArrayList<>();
 
         for (Todo todo : input) {
             if (todo.getTitle().equals(title)) {
@@ -559,8 +563,46 @@ public class Main {
         return number;
     } // Only used in case more than one t0do is available
 
-    private static List<Todo> filterSelection(String[] args) {
-        return todos;
+    private static List<Todo> filterSelection(List<Todo> values, String argument, boolean includeTickedFilters) {
+        if (includeTickedFilters) {
+            switch (argument.toLowerCase()) {
+                case "newtoold":
+                    values = newtoold(todos);
+                    break;
+                case "oldtonew":
+                    values = oldtonew(todos);
+                    break;
+                case "atoz":
+                    values = atoz(todos);
+                    break;
+                case "ztoa":
+                    values = ztoa(todos);
+                    break;
+                case "tickedtounticked":
+                    values = tickedtounticked(todos);
+                    break;
+                case "untickedtoticked":
+                    values = untickedtoticked(todos);
+                    break;
+            }
+        } else {
+            switch (argument.toLowerCase()) {
+                case "newtoold":
+                    values = newtoold(todos);
+                    break;
+                case "oldtonew":
+                    values = oldtonew(todos);
+                    break;
+                case "atoz":
+                    values = atoz(todos);
+                    break;
+                case "ztoa":
+                    values = ztoa(todos);
+                    break;
+            }
+        }
+
+        return values;
     } // TODO: 31.10.2019 all filter switch statements in here
 
     ////////////////// WRITE / READ //////////////////////
@@ -665,7 +707,7 @@ public class Main {
             run = false;
 
             for (int i = 0; i < values.size() - 1; i++) {
-                if (values.get(i + 1).getDate() < values.get(i).getDate()) {
+                if (values.get(i + 1).getDate() > values.get(i).getDate()) {
                     Todo helper = values.get(i + 1);
                     values.set(i + 1, values.get(i));
                     values.set(i, helper);
@@ -686,7 +728,7 @@ public class Main {
 
             for (int i = 0; i < values.size() - 1; i++) {
 
-                if (values.get(i + 1).getDate() > values.get(i).getDate()) {
+                if (values.get(i + 1).getDate() < values.get(i).getDate()) {
                     Todo helper = values.get(i + 1);
                     values.set(i + 1, values.get(i));
                     values.set(i, helper);
