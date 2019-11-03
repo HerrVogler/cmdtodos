@@ -154,6 +154,7 @@ public class Main {
         switch (results.size()) {
             case 0:
                 int size = findTodoByTitle(archive(!archive), args[0]).size();
+
                 if (size > 0) {
                     throw new RuntimeException("> " + ((size > 1) ? "todos" : "a todo") + " with the same name " + ((size > 1) ? "are" : "is") + " already " + (archive ? "unticked" : "ticked"));
                 }
@@ -191,7 +192,7 @@ public class Main {
             output.append(value.toString()).append("\n");
         }
 
-        AnsiConsole.out.print((output.length() > 1) ? output.substring(0, output.length()-1): output);
+        AnsiConsole.out.print((output.length() > 1) ? output.substring(0, output.length() - 1) : output);
     }
 
     private static void commandDelete(String[] args) {
@@ -285,67 +286,97 @@ public class Main {
     }
 
     private static void commandSort(String[] args) {
-        if (args.length != 2) {
-            throw new RuntimeException("> command should be: \"todo sort [category] <filter>\"");
-        }
+        String exceptionMessage = "> command should be: \"todo sort [category] <filter>\"";
+        String unknownArgument = "> unexpected argument; type \"todo help\" for help";
 
-        switch (args[0].toLowerCase()) {
-            case "newtoold":
-                todos = newtoold(todos);
+        switch (args.length) {
+            case 1:
+                todos = filterSelection(todos, args[0].toLowerCase(), true, unknownArgument);
                 break;
-            case "oldtonew":
-                todos = oldtonew(todos);
+            case 2:
+                switch (args[0].toLowerCase()) {
+                    case "unticked":
+                        todos = filterSelection(archive(false), args[1].toLowerCase(), false, unknownArgument);
+                        break;
+                    case "ticked":
+                        todos = filterSelection(archive(true), args[1].toLowerCase(), false, unknownArgument);
+                        break;
+                    case "all":
+                        todos = filterSelection(todos, args[1].toLowerCase(), true, unknownArgument);
+                        break;
+                    default:
+                        throw new RuntimeException(unknownArgument);
+                }
                 break;
-            case "atoz":
-                todos = atoz(todos);
-                break;
-            case "ztoa":
-                todos = ztoa(todos);
-                break;
-            case "tickedtounticked":
-                todos = tickedtounticked(todos);
-                break;
-            case "untickedtoticked":
-                todos = untickedtoticked(todos);
-                break;
+            default:
+                throw new RuntimeException(exceptionMessage);
         }
 
         System.out.println();
         System.out.println("> sorted");
 
         writeTodos(todos);
-    } // TODO: 28.10.2019 also being able to only sort ticked/unticked
+    }
 
     private static void commandEdit(String[] args) {
-        String message = "> command should be: \"todo edit <\"textOf\"/\"descriptionOf\"> <title> [edit]\"";
+        String message = "> command should be: \"todo edit <\"titleOf\"/\"descriptionOf\"> <title> [edit]\"";
+        List<Todo> values;
+        int index;
+
+        if (args.length < 2) {
+            throw new RuntimeException(message);
+        }
+
+        values = findTodoByTitle(todos, args[1]);
+
+        if (values.size() == 0) {
+            throw new RuntimeException("> could not find todo");
+        }
+
         switch (args.length) {
             case 2:
-                //there are more than one
                 switch (args[0].toLowerCase()) {
-                    case "textof":
-
+                    case "titleof":
+                        index = getIndexOfTodo(getTodoFromUser(values)); // line has multiples because of getTodoFromUser which has user interaction
+                        todos.get(index).setTitle(userEdit(todos.get(index).getTitle()));
                         break;
                     case "descriptionof":
-
+                        index = getIndexOfTodo(getTodoFromUser(values));
+                        todos.get(index).setDescription(userEdit(todos.get(index).getDescription()));
                         break;
                     default:
                         throw new RuntimeException(message);
                 }
                 break;
             case 3:
+                switch (args[0].toLowerCase()) {
+                    case "titleof":
+                        index = getIndexOfTodo(getTodoFromUser(values));
+                        todos.get(index).setTitle(args[2]);
+                        break;
+                    case "descriptionof":
+                        index = getIndexOfTodo(getTodoFromUser(values));
+                        todos.get(index).setDescription(args[2]);
+                        break;
+                    default:
+                        throw new RuntimeException(message);
+                }
 
                 break;
             default:
                 throw new RuntimeException(message);
         }
 
-        writeTodos(todos);
-    } // TODO: 28.10.2019 finish
+        System.out.println();
+        System.out.println("> edited");
 
-    private static String edit(String edit) {
+        writeTodos(todos);
+    } // TODO: 28.10.2019 make more efficient
+
+    private static String userEdit(String userEdit) {
         //gg
         return "";
-    } // TODO: 30.10.2019
+    } // TODO: 30.10.2019 finish
 
     private static void commandHelp(String[] args) {
         if (args.length == 1) {
@@ -402,60 +433,13 @@ public class Main {
             case 2:
                 switch (args[0]) {
                     case "ticked":
-                        switch (args[1].toLowerCase()) {
-                            case "oldtonew":
-                                list(oldtonew(archive(true)));
-                                break;
-                            case "newtoold":
-                                list(newtoold(archive(true)));
-                                break;
-                            case "atoz":
-                                list(atoz(archive(true)));
-                                break;
-                            case "ztoa":
-                                list(ztoa(archive(true)));
-                                break;
-                            default:
-                                throw new RuntimeException(unexpectedArgument);
-                        }
-
+                        list(filterSelection(archive(true), args[1].toLowerCase(), false, unexpectedArgument));
                         break;
                     case "all":
-                        switch (args[1].toLowerCase()) {
-                            case "oldtonew":
-                                list(oldtonew(todos));
-                                break;
-                            case "newtoold":
-                                list(newtoold(todos));
-                                break;
-                            case "atoz":
-                                list(atoz(todos));
-                                break;
-                            case "ztoa":
-                                list(ztoa(todos));
-                                break;
-                            default:
-                                throw new RuntimeException(unexpectedArgument);
-                        }
-
+                        list(filterSelection(todos, args[1].toLowerCase(), true, unexpectedArgument));
                         break;
                     case "unticked":
-                        switch (args[1].toLowerCase()) {
-                            case "oldtonew":
-                                list(oldtonew(archive(false)));
-                                break;
-                            case "newtoold":
-                                list(newtoold(archive(false)));
-                                break;
-                            case "atoz":
-                                list(atoz(archive(false)));
-                                break;
-                            case "ztoa":
-                                list(ztoa(archive(false)));
-                                break;
-                            default:
-                                throw new RuntimeException(unexpectedArgument);
-                        }
+                        list(filterSelection(archive(false), args[1].toLowerCase(), false, unexpectedArgument));
                         break;
                     default:
                         throw new RuntimeException(unexpectedArgument);
@@ -463,7 +447,7 @@ public class Main {
 
                 break;
             default:
-                throw new RuntimeException("> too many arguments; type \"todo help\" for help"); // TODO: 31.10.2019 to many arguments to command should be...
+                throw new RuntimeException("> command should be: \"todo ls [category] [filter]\"");
         }
     }
 
@@ -479,11 +463,11 @@ public class Main {
 
     ////////////////////// LOGIC ///////////////////////////
 
-    private static List<Todo> archive(boolean ticked) {
+    private static List<Todo> archive(boolean archive) {
         List<Todo> values = new ArrayList<>();
 
         for (Todo todo : todos) {
-            if (ticked) {
+            if (archive) {
                 if (todo.isTicked()) {
                     values.add(todo);
                 }
@@ -525,6 +509,10 @@ public class Main {
         long number = 0;
         boolean run = true;
 
+        if (results.size() == 1) {
+            return results.get(0).getId();
+        }
+
         while (run) {
             System.out.println("\n> there are more than one todo with the same name");
             System.out.println("> please choose:\n");
@@ -563,47 +551,51 @@ public class Main {
         return number;
     } // Only used in case more than one t0do is available
 
-    private static List<Todo> filterSelection(List<Todo> values, String argument, boolean includeTickedFilters) {
+    private static List<Todo> filterSelection(List<Todo> values, String argument, boolean includeTickedFilters, String defaultMessage) {
         if (includeTickedFilters) {
             switch (argument.toLowerCase()) {
                 case "newtoold":
-                    values = newtoold(todos);
+                    values = newtoold(values);
                     break;
                 case "oldtonew":
-                    values = oldtonew(todos);
+                    values = oldtonew(values);
                     break;
                 case "atoz":
-                    values = atoz(todos);
+                    values = atoz(values);
                     break;
                 case "ztoa":
-                    values = ztoa(todos);
+                    values = ztoa(values);
                     break;
                 case "tickedtounticked":
-                    values = tickedtounticked(todos);
+                    values = tickedtounticked(values);
                     break;
                 case "untickedtoticked":
-                    values = untickedtoticked(todos);
+                    values = untickedtoticked(values);
                     break;
+                default:
+                    throw new RuntimeException(defaultMessage);
             }
         } else {
             switch (argument.toLowerCase()) {
                 case "newtoold":
-                    values = newtoold(todos);
+                    values = newtoold(values);
                     break;
                 case "oldtonew":
-                    values = oldtonew(todos);
+                    values = oldtonew(values);
                     break;
                 case "atoz":
-                    values = atoz(todos);
+                    values = atoz(values);
                     break;
                 case "ztoa":
-                    values = ztoa(todos);
+                    values = ztoa(values);
                     break;
+                default:
+                    throw new RuntimeException(defaultMessage);
             }
         }
 
         return values;
-    } // TODO: 31.10.2019 all filter switch statements in here
+    }
 
     ////////////////// WRITE / READ //////////////////////
 
