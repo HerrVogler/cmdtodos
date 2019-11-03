@@ -782,10 +782,42 @@ public class Main {
     }
 
     private static List<Todo> tickedtounticked(List<Todo> values) {
-        return values;
-    } // TODO: 31.10.2019
+        List<Todo> ticked = new ArrayList<>();
+        List<Todo> unticked = new ArrayList<>();
+
+        for (Todo todo : values) {
+            if (todo.isTicked()) {
+                ticked.add(todo);
+            }
+
+            if (!todo.isTicked()) {
+                unticked.add(todo);
+            }
+
+        }
+
+        ticked.addAll(unticked);
+
+        return ticked;
+    }
 
     private static List<Todo> untickedtoticked(List<Todo> values) {
-        return values;
-    } // TODO: 31.10.2019
+        List<Todo> ticked = new ArrayList<>();
+        List<Todo> unticked = new ArrayList<>();
+
+        for (Todo todo : values) {
+            if (todo.isTicked()) {
+                ticked.add(todo);
+            }
+
+            if (!todo.isTicked()) {
+                unticked.add(todo);
+            }
+
+        }
+
+        unticked.addAll(ticked);
+
+        return unticked;
+    }
 }
