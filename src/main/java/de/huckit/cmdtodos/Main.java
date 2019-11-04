@@ -7,10 +7,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.TERMINATE;
@@ -47,7 +44,7 @@ public class Main {
             System.out.println("\n" + e.getMessage());
             System.exit(1);
         }
-    } //todo      switch to json
+    } //todo      switch to json     categoriese for todos            reminder/priority/deadline             id starting at 1
 
     private static void run(String[] args) {
         if (!new File(todoDir.getPath() + "/todos.todo").exists()) {
@@ -114,10 +111,11 @@ public class Main {
                 break;
             case "edit":
                 commandEdit(arguments);
+                break;
             default:
                 throw new RuntimeException("> unexpected command; type \"todo help\" for help");
         }
-    }
+    } // todo consolen handle // java native           // enum     // file.delete()
 
     //////////////////// COMMANDS ////////////////////////
 
@@ -504,52 +502,52 @@ public class Main {
     }
 
     private static long getTodoFromUser(List<Todo> results) {
-        Scanner sc = new Scanner(System.in);
+    Scanner sc = new Scanner(System.in);
 
-        long number = 0;
-        boolean run = true;
+    long number = 0;
+    boolean run = true;
 
         if (results.size() == 1) {
-            return results.get(0).getId();
-        }
+        return results.get(0).getId();
+    }
 
         while (run) {
-            System.out.println("\n> there are more than one todo with the same name");
-            System.out.println("> please choose:\n");
+        System.out.println("\n> there are more than one todo with the same name");
+        System.out.println("> please choose:\n");
 
-            for (Todo todo : results) {
-                AnsiConsole.out.println(todo);
-            }
+        for (Todo todo : results) {
+            AnsiConsole.out.println(todo);
+        }
 
-            System.out.println("> enter ID");
-            System.out.print("> ");
-            String input = (sc.nextLine());
+        System.out.println("> enter ID");
+        System.out.print("> ");
+        String input = (sc.nextLine());
 
-            if (input.equals("exit")) {
-                throw new RuntimeException("\n> exited\n");
-            }
+        if (input.equals("exit")) {
+            throw new RuntimeException("\n> exited\n");
+        }
 
-            try {
-                number = Long.parseLong(input);
-            } catch (Exception e) {
-                number = 0;
-            }
+        try {
+            number = Long.parseLong(input);
+        } catch (Exception e) {
+            number = 0;
+        }
 
-            for (Todo result : results) {
-                if (number == result.getId()) {
-                    run = false;
-                    break;
-                }
-            }
-
-            if (run) {
-                System.out.println();
-                AnsiConsole.out.println("> " + ANSI_RED + "no valid entry" + ANSI_RESET);
+        for (Todo result : results) {
+            if (number == result.getId()) {
+                run = false;
+                break;
             }
         }
 
+        if (run) {
+            System.out.println();
+            AnsiConsole.out.println("> " + ANSI_RED + "no valid entry" + ANSI_RESET);
+        }
+    }
+
         return number;
-    } // Only used in case more than one t0do is available
+} // Only used in case more than one t0do is available
 
     private static List<Todo> filterSelection(List<Todo> values, String argument, boolean includeTickedFilters, String defaultMessage) {
         if (includeTickedFilters) {
