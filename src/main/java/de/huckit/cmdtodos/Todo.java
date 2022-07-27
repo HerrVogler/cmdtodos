@@ -1,7 +1,6 @@
 package de.huckit.cmdtodos;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.Date;
 
 public class Todo implements Serializable {
@@ -10,15 +9,8 @@ public class Todo implements Serializable {
     public static final String ANSI_GREEN = "\u001B[32m";
     private long id;
     private String title, description;
-    private boolean ticked = false;
-    private long date = System.currentTimeMillis();
-
-
-    public Todo(String title, String description, long id) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-    }
+    private boolean ticked;
+    private long date;
 
     public Todo(long id, String title, String description, boolean ticked, long date) {
         this.id = id;
@@ -28,7 +20,8 @@ public class Todo implements Serializable {
         this.date = date;
     }
 
-    public Todo() {
+    public Todo(long id, String title, String description) {
+        this(id, title, description, false, System.currentTimeMillis());
     }
 
     public long getId() {
@@ -80,14 +73,26 @@ public class Todo implements Serializable {
         return " - Title: " + title + " (" + id + ")" + "\n" +
                 "   Description: " + description + "\n" +
                 "   Date created: " + new Date(this.date) + "\n" +
-                "   Done: " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + "\n";
+                "   Status: " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + "\n";
     }
 
     public String forList() {
-        return "> " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + title;
+        return "> " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + title + shortenDescription();
     }
 
     public String forListID() {
-        return "> " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + id + " - " + title;
+        return "> " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + id + " - " + title + shortenDescription();
+    }
+
+    private String shortenDescription() {
+        if (description.equals("no description")) {
+            return "";
+        }
+
+        if (description.length() > 50) {
+            return " - " + description.substring(0, 50).stripTrailing() + "...";
+        }
+
+        return " - " + description;
     }
 }

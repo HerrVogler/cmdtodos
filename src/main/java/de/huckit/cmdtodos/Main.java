@@ -1,6 +1,5 @@
 package de.huckit.cmdtodos;
 
-import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.*;
@@ -14,11 +13,11 @@ import static java.nio.file.FileVisitResult.TERMINATE;
 
 public class Main {
     private static List<Todo> todos = new ArrayList<>();
-    private static File todoDir = new File(System.getProperty("user.home") + "/.cmdtodos/todos");
+    private static final File todoDir = new File(System.getProperty("user.home") + "/.cmdtodos/todos");
 
-    private static String ANSI_RED = "\u001B[31m";
-    private static String ANSI_GREEN = "\u001B[32m";
-    private static String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_RESET = "\u001B[0m";
 
 
     /*
@@ -44,7 +43,7 @@ public class Main {
             System.out.println("\n" + e.getMessage());
             System.exit(1);
         }
-    } //todo      switch to json     categoriese for todos            reminder/priority/deadline             id starting at 1
+    } //ideas: switch to json, categories for todos, reminder/priority/deadline, id starting at 1, consolen handle, java native, enum, file.delete()
 
     private static void run(String[] args) {
         if (!new File(todoDir.getPath() + "/todos.todo").exists()) {
@@ -55,17 +54,6 @@ public class Main {
                 args = new String[]{"help"};
             }
         } else {
-            if (args.length > 0) {
-                if (args[0].equals("aabbllrr")) {
-                    try {
-                        deleteFileOrFolder(Paths.get(todoDir.getPath()));
-                        System.out.println("\n> reseted");
-                    } catch (IOException e) {
-                        throw new RuntimeException("> could not reset cmdtodos");
-                    }
-                }
-            }
-
             try {
                 todos = readTodos();
             } catch (Exception e) {
@@ -115,17 +103,17 @@ public class Main {
             default:
                 throw new RuntimeException("> unexpected command; type \"todo help\" for help");
         }
-    } // todo consolen handle // java native           // enum     // file.delete()
+    }
 
     //////////////////// COMMANDS ////////////////////////
 
     private static void commandNew(String[] args) {
         switch (args.length) {
             case 1:
-                todos.add(new Todo(args[0], "no description", createID()));
+                todos.add(new Todo(createID(), args[0], "no description"));
                 break;
             case 2:
-                todos.add(new Todo(args[0], args[1], createID()));
+                todos.add(new Todo(createID(), args[0], args[1]));
                 break;
             default:
                 throw new RuntimeException("> command should be: \"todo new <title> <description>\"");
@@ -136,7 +124,7 @@ public class Main {
     }
 
     private static void commandTickAndUntick(String[] args, boolean archive) {
-        ArrayList<Todo> values = new ArrayList<>(archive(archive));
+        ArrayList<Todo> values = new ArrayList<>(getTickedOrUnticked(archive));
         ArrayList<Todo> results;
 
         if (args.length != 1) {
@@ -151,7 +139,7 @@ public class Main {
 
         switch (results.size()) {
             case 0:
-                int size = findTodoByTitle(archive(!archive), args[0]).size();
+                int size = findTodoByTitle(getTickedOrUnticked(!archive), args[0]).size();
 
                 if (size > 0) {
                     throw new RuntimeException("> " + ((size > 1) ? "todos" : "a todo") + " with the same name " + ((size > 1) ? "are" : "is") + " already " + (archive ? "unticked" : "ticked"));
@@ -162,7 +150,7 @@ public class Main {
                 tickAndUntick(results.get(0).getId(), archive);
                 break;
             default:
-                tickAndUntick(getTodoFromUser(results), archive);
+                tickAndUntick(selectFromMultipleTodosDialog(results), archive);
                 break;
         }
 
@@ -214,7 +202,7 @@ public class Main {
                 System.out.println("\n> successfully deleted");
                 break;
             default:
-                todos.remove(getIndexOfTodo(getTodoFromUser(values)));
+                todos.remove(getIndexOfTodo(selectFromMultipleTodosDialog(values)));
                 System.out.println("\n> successfully deleted");
         }
 
@@ -235,11 +223,11 @@ public class Main {
                     break;
                 case "ticked":
                     askToDelete("\n> do you really want to delete all ticked todos?");
-                    deleteArguments(true);
+                    deleteTickedOrUnticked(true);
                     break;
                 case "unticked":
                     askToDelete("\n> do you really want to delete all unticked todos?");
-                    deleteArguments(false);
+                    deleteTickedOrUnticked(false);
                     break;
                 default:
                     throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
@@ -260,8 +248,10 @@ public class Main {
         }
     }
 
-    private static void deleteArguments(boolean archive) {
-        todos = new ArrayList<>(archive(!archive));
+    private static void deleteTickedOrUnticked(boolean ticked) {
+        todos = new ArrayList<>(getTickedOrUnticked(!ticked));
+
+        System.out.println("\n> all " + (ticked ? "ticked" : "unticked") + " todos deleted");
 
         writeTodos(todos);
     }
@@ -294,10 +284,10 @@ public class Main {
             case 2:
                 switch (args[0].toLowerCase()) {
                     case "unticked":
-                        todos = filterSelection(archive(false), args[1].toLowerCase(), false, unknownArgument);
+                        todos = filterSelection(getTickedOrUnticked(false), args[1].toLowerCase(), false, unknownArgument);
                         break;
                     case "ticked":
-                        todos = filterSelection(archive(true), args[1].toLowerCase(), false, unknownArgument);
+                        todos = filterSelection(getTickedOrUnticked(true), args[1].toLowerCase(), false, unknownArgument);
                         break;
                     case "all":
                         todos = filterSelection(todos, args[1].toLowerCase(), true, unknownArgument);
@@ -335,11 +325,11 @@ public class Main {
             case 2:
                 switch (args[0].toLowerCase()) {
                     case "titleof":
-                        index = getIndexOfTodo(getTodoFromUser(values)); // line has multiples because of getTodoFromUser which has user interaction
+                        index = getIndexOfTodo(selectFromMultipleTodosDialog(values)); // line has multiples because of getTodoFromUser which has user interaction
                         todos.get(index).setTitle(userEdit(todos.get(index).getTitle()));
                         break;
                     case "descriptionof":
-                        index = getIndexOfTodo(getTodoFromUser(values));
+                        index = getIndexOfTodo(selectFromMultipleTodosDialog(values));
                         todos.get(index).setDescription(userEdit(todos.get(index).getDescription()));
                         break;
                     default:
@@ -349,11 +339,11 @@ public class Main {
             case 3:
                 switch (args[0].toLowerCase()) {
                     case "titleof":
-                        index = getIndexOfTodo(getTodoFromUser(values));
+                        index = getIndexOfTodo(selectFromMultipleTodosDialog(values));
                         todos.get(index).setTitle(args[2]);
                         break;
                     case "descriptionof":
-                        index = getIndexOfTodo(getTodoFromUser(values));
+                        index = getIndexOfTodo(selectFromMultipleTodosDialog(values));
                         todos.get(index).setDescription(args[2]);
                         break;
                     default:
@@ -398,30 +388,30 @@ public class Main {
         String unexpectedArgument = "> unexpected argument; type \"todo help\" for help";
         switch (args.length) {
             case 0:
-                list(archive(false));
+                list(getTickedOrUnticked(false));
                 break;
             case 1:
                 switch (args[0].toLowerCase()) {
                     case "unticked":
-                        list(archive(false));
+                        list(getTickedOrUnticked(false));
                         break;
                     case "ticked":
-                        list(archive(true));
+                        list(getTickedOrUnticked(true));
                         break;
                     case "all":
                         list(todos);
                         break;
                     case "oldtonew":
-                        list(oldtonew(archive(false)));
+                        list(oldtonew(getTickedOrUnticked(false)));
                         break;
                     case "newtoold":
-                        list(newtoold(archive(false)));
+                        list(newtoold(getTickedOrUnticked(false)));
                         break;
                     case "atoz":
-                        list(atoz(archive(false)));
+                        list(atoz(getTickedOrUnticked(false)));
                         break;
                     case "ztoa":
-                        list(ztoa(archive(false)));
+                        list(ztoa(getTickedOrUnticked(false)));
                         break;
                     default:
                         throw new RuntimeException(unexpectedArgument);
@@ -431,13 +421,13 @@ public class Main {
             case 2:
                 switch (args[0]) {
                     case "ticked":
-                        list(filterSelection(archive(true), args[1].toLowerCase(), false, unexpectedArgument));
+                        list(filterSelection(getTickedOrUnticked(true), args[1].toLowerCase(), false, unexpectedArgument));
                         break;
                     case "all":
                         list(filterSelection(todos, args[1].toLowerCase(), true, unexpectedArgument));
                         break;
                     case "unticked":
-                        list(filterSelection(archive(false), args[1].toLowerCase(), false, unexpectedArgument));
+                        list(filterSelection(getTickedOrUnticked(false), args[1].toLowerCase(), false, unexpectedArgument));
                         break;
                     default:
                         throw new RuntimeException(unexpectedArgument);
@@ -461,11 +451,11 @@ public class Main {
 
     ////////////////////// LOGIC ///////////////////////////
 
-    private static List<Todo> archive(boolean archive) {
+    private static List<Todo> getTickedOrUnticked(boolean ticked) {
         List<Todo> values = new ArrayList<>();
 
         for (Todo todo : todos) {
-            if (archive) {
+            if (ticked) {
                 if (todo.isTicked()) {
                     values.add(todo);
                 }
@@ -501,7 +491,7 @@ public class Main {
         return values;
     }
 
-    private static long getTodoFromUser(List<Todo> results) {
+    private static long selectFromMultipleTodosDialog(List<Todo> results) {
     Scanner sc = new Scanner(System.in);
 
     long number = 0;
@@ -512,7 +502,7 @@ public class Main {
     }
 
         while (run) {
-        System.out.println("\n> there are more than one todo with the same name");
+        System.out.println("\n> there is more than one todo with the same name");
         System.out.println("> please choose:\n");
 
         for (Todo todo : results) {
@@ -521,10 +511,10 @@ public class Main {
 
         System.out.println("> enter ID");
         System.out.print("> ");
-        String input = (sc.nextLine());
+        String input = sc.nextLine();
 
-        if (input.equals("exit")) {
-            throw new RuntimeException("\n> exited\n");
+        if (input.equals("exit") || input.equals("quit") || input.equals("cancel") || input.equals("stop")) {
+            throw new RuntimeException("> exited");
         }
 
         try {
@@ -595,7 +585,7 @@ public class Main {
         return values;
     }
 
-    ////////////////// WRITE / READ //////////////////////
+    ////////////////// READ / WRITE //////////////////////
 
     private static void writeTodos(List<Todo> values) {
         File file = new File(todoDir.getPath() + "/todos.todo");
@@ -618,7 +608,7 @@ public class Main {
     private static ArrayList<Todo> readTodos() {
         ArrayList<Todo> values;
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(todoDir.getPath() + "/todos.todo")))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(todoDir.getPath() + "/todos.todo"))) {
             Object obj = ois.readObject();
             //noinspection unchecked
             values = (ArrayList<Todo>) obj;
@@ -651,7 +641,7 @@ public class Main {
         }
 
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
-            writer.write("" + number);
+            writer.write(Long.toString(number));
         } catch (IOException e) {
             throw new RuntimeException("error at bufferedWriter create ID");
         }
