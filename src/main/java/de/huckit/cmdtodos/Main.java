@@ -79,9 +79,6 @@ public class Main {
             case "untick":
                 commandTickAndUntick(arguments, true);
                 break;
-            case "help":
-                commandHelp(arguments);
-                break;
             case "ls":
                 commandLs(arguments);
                 break;
@@ -100,8 +97,10 @@ public class Main {
             case "edit":
                 commandEdit(arguments);
                 break;
+            case "help":
             default:
-                throw new RuntimeException("> unexpected command; type \"todo help\" for help");
+                commandHelp(arguments);
+                break;
         }
     }
 
@@ -311,7 +310,7 @@ public class Main {
         List<Todo> values;
         int index;
 
-        if (args.length < 2) {
+        if (args.length < 2 || args.length > 3) {
             throw new RuntimeException(message);
         }
 
@@ -321,35 +320,30 @@ public class Main {
             throw new RuntimeException("> could not find todo");
         }
 
-        switch (args.length) {
-            case 2:
-                switch (args[0].toLowerCase()) {
-                    case "titleof":
-                        index = getIndexOfTodo(selectFromMultipleTodosDialog(values)); // line has multiples because of getTodoFromUser which has user interaction
-                        todos.get(index).setTitle(userEdit(todos.get(index).getTitle()));
-                        break;
-                    case "descriptionof":
+        switch (args[0].toLowerCase()) {
+            case "titleof":
+                switch (args.length) {
+                    case 2:
                         index = getIndexOfTodo(selectFromMultipleTodosDialog(values));
-                        todos.get(index).setDescription(userEdit(todos.get(index).getDescription()));
+                        todos.get(index).setTitle(userEdit("title", todos.get(index).getTitle()));
                         break;
-                    default:
-                        throw new RuntimeException(message);
-                }
-                break;
-            case 3:
-                switch (args[0].toLowerCase()) {
-                    case "titleof":
+                    case 3:
                         index = getIndexOfTodo(selectFromMultipleTodosDialog(values));
                         todos.get(index).setTitle(args[2]);
                         break;
-                    case "descriptionof":
+                }
+                break;
+            case "descriptionof":
+                switch (args.length) {
+                    case 2:
+                        index = getIndexOfTodo(selectFromMultipleTodosDialog(values));
+                        todos.get(index).setDescription(userEdit("description", todos.get(index).getDescription()));
+                        break;
+                    case 3:
                         index = getIndexOfTodo(selectFromMultipleTodosDialog(values));
                         todos.get(index).setDescription(args[2]);
                         break;
-                    default:
-                        throw new RuntimeException(message);
                 }
-
                 break;
             default:
                 throw new RuntimeException(message);
@@ -359,12 +353,16 @@ public class Main {
         System.out.println("> edited");
 
         writeTodos(todos);
-    } // TODO: 28.10.2019 make more efficient
+    }
 
-    private static String userEdit(String userEdit) {
-        //gg
-        return "";
-    } // TODO: 30.10.2019 finish
+    private static String userEdit(String part, String old) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("> old " + part + ": " + old);
+        System.out.print("> new " + part + ": ");
+
+        return sc.nextLine();
+    }
 
     private static void commandHelp(String[] args) {
         if (args.length == 1) {
