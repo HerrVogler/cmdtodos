@@ -211,7 +211,7 @@ public class Main {
 
     private static void commandDeleteAll(String[] args) {
         if (args.length > 1) {
-            throw new RuntimeException("> command should be: \"todo deleteAll [filter]\"");
+            throw new RuntimeException("> command should be: \"todo deleteAll [category]\"");
         }
 
         if (args.length != 0) {
@@ -365,22 +365,70 @@ public class Main {
     }
 
     private static void commandHelp(String[] args) {
-        if (args.length == 1) {
-            switch (args[0]) {
-                case "new":
-                case "add":
-
-                    break;
-                case "tick":
-
-                    break;
-                default:
-                    throw new RuntimeException("unexpected atribute");
-            }
-        } else {
+        switch (args.length) {
+            case 0:
+                System.out.println();
+                System.out.println("type \"todo help [command]\" for command specific information" + "\n" +
+                        "commands, categories, and filters are not case sensitive" + "\n\n" +
+                        "\t\t" + "Commands" + "\n\n" +
+                        "  " + String.format("%-20s%s", "new", "creates a new todo") + "\n" +
+                        "  " + String.format("%-20s%s", "ls", "lists your todos") + "\n" +
+                        "  " + String.format("%-20s%s", "tick/untick", "ticks/unticks a todo") + "\n" +
+                        "  " + String.format("%-20s%s", "show", "shows details for a todo") + "\n" +
+                        "  " + String.format("%-20s%s", "delete", "deletes a todo") + "\n" +
+                        "  " + String.format("%-20s%s", "edit", "edits a todo") + "\n" +
+                        "  " + String.format("%-20s%s", "sort", "sorts your todos") + "\n" +
+                        "  " + String.format("%-20s%s", "deleteAll", "deletes all data") + "\n\n" +
+                        "\t\t" + "Categories" + "\n\n" +
+                        "  " + String.format("%-20s%s", "ticked", "includes all ticked todos") + "\n" +
+                        "  " + String.format("%-20s%s", "unticked", "includes all unticked todos") + "\n" +
+                        "  " + String.format("%-20s%s", "all", "includes all todos") + "\n\n" +
+                        "\t\t" + "Filters" + "\n\n" +
+                        "  " + String.format("%-20s%s", "NewtoOld", "sorts todos from new to old") + "\n" +
+                        "  " + String.format("%-20s%s", "OldtoNew", "sorts todos from old to new") + "\n" +
+                        "  " + String.format("%-20s%s", "AtoZ", "sorts todos alphabetical from A to Z") + "\n" +
+                        "  " + String.format("%-20s%s", "ZtoA", "sorts todos alphabetical from Z to A") + "\n" +
+                        "  " + String.format("%-20s%s", "TickedtoUnticked", "sorts todos from ticked to unticked") + "\n" +
+                        "  " + String.format("%-20s%s", "UntickedtoTicked", "sorts todos from unticked to ticked"));
+                break;
+            case 1:
+                switch (args[0]) {
+                    case "new":
+                    case "add":
+                        System.out.println("> todo new <title> [description]");
+                        break;
+                    case "ls":
+                        System.out.println("> todo ls [category] [filter]");
+                        break;
+                    case "tick":
+                        System.out.println("> todo tick <title>");
+                        break;
+                    case "untick":
+                        System.out.println("> todo untick <title>");
+                        break;
+                    case "show":
+                        System.out.println("> todo show <title>");
+                        break;
+                    case "delete":
+                        System.out.println("> todo delete <title>");
+                        break;
+                    case "edit":
+                        System.out.println("> todo edit <\"titleOf\"/\"descriptionOf\"> <title> [edit]");
+                        break;
+                    case "sort":
+                        System.out.println("> todo sort [category] <filter>");
+                        break;
+                    case "deleteAll":
+                        System.out.println("> todo deleteAll [category]");
+                        break;
+                    default:
+                        throw new RuntimeException("unexpected attribute");
+                }
+                break;
+        default:
             throw new RuntimeException("> command should be: todo help [command]");
         }
-    } // TODO: 11.10.2019
+    }
 
     private static void commandLs(String[] args) {
         String unexpectedArgument = "> unexpected argument; type \"todo help\" for help";
