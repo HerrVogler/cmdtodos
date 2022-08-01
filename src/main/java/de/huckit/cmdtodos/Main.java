@@ -118,7 +118,7 @@ public class Main {
                 todos.add(new Todo(createID(), args[0], args[1]));
                 break;
             default:
-                throw new RuntimeException("> command should be: \"todo new <title> <description>\"");
+                throw new RuntimeException("> command should be: todo new <title> <description>");
         }
 
         writeTodos(todos);
@@ -130,7 +130,7 @@ public class Main {
         ArrayList<Todo> results;
 
         if (args.length != 1) {
-            throw new RuntimeException("> command should be: \"todo " + (archive ? "untick" : "tick") + " <title>\"");
+            throw new RuntimeException("> command should be: todo " + (archive ? "untick" : "tick") + " <title>");
         }
 
         if (values.size() == 0) {
@@ -147,7 +147,7 @@ public class Main {
                     throw new RuntimeException("> " + ((size > 1) ? "todos" : "a todo") + " with the same name " + ((size > 1) ? "are" : "is") + " already " + (archive ? "unticked" : "ticked"));
                 }
                 throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)\n" +
-                        "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: \"todo ls" + (archive ? " ticked" : "") + " [filter]\"");
+                        "> to see which todo can be " + (archive ? "unticked" : "ticked") + " type: todo ls" + (archive ? " ticked" : "") + " [filter]");
             case 1:
                 tickAndUntick(results.get(0).getId(), archive);
                 break;
@@ -195,18 +195,17 @@ public class Main {
             throw new RuntimeException("> command should be: todo delete <title>");
         }
 
-        if (todos.size() == 0) {
+        if (todos.isEmpty()) {
             throw new RuntimeException("> there are no todos to be deleted");
         }
 
         values = new ArrayList<>(findTodoByTitle(todos, args[0]));
 
-        switch (values.size()) {
-            case 0:
-                throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)");
-            default:
-                todos.remove(getIndexOfTodo(selectFromMultipleTodosDialog(values)));
-                System.out.println("> successfully deleted");
+        if (values.isEmpty()) {
+            throw new RuntimeException("> could not find Todo (Hint: it's case sensitive)");
+        } else {
+            todos.remove(getIndexOfTodo(selectFromMultipleTodosDialog(values)));
+            System.out.println("> successfully deleted");
         }
 
 
@@ -215,7 +214,7 @@ public class Main {
 
     private static void commandDeleteAll(String[] args) {
         if (args.length > 1) {
-            throw new RuntimeException("> command should be: \"todo deleteAll [category]\"");
+            throw new RuntimeException("> command should be: todo deleteAll [category]");
         }
 
         if (args.length != 0) {
@@ -233,7 +232,7 @@ public class Main {
                     deleteTickedOrUnticked(false);
                     break;
                 default:
-                    throw new RuntimeException("> unexpected argument; type \"todo help\" for help");
+                    throw new RuntimeException("> unexpected argument, for help type: todo help");
             }
         } else {
             askToDelete("");
@@ -279,8 +278,8 @@ public class Main {
     }
 
     private static void commandSort(String[] args) {
-        String exceptionMessage = "> command should be: \"todo sort [category] <filter>\"";
-        String unknownArgument = "> unexpected argument; type \"todo help\" for help";
+        String exceptionMessage = "> command should be: todo sort [category] <filter>";
+        String unknownArgument = "> unexpected argument, for help type: todo help";
 
         switch (args.length) {
             case 1:
@@ -311,7 +310,7 @@ public class Main {
     }
 
     private static void commandEdit(String[] args) {
-        String message = "> command should be: \"todo edit <\"title\"|\"description\"> <title> [edit]\"";
+        String message = "> command should be: todo edit <\"title\"|\"description\"> <title> [edit]";
         List<Todo> values;
         int index;
 
@@ -374,7 +373,7 @@ public class Main {
     private static void commandHelp(String[] args) {
         switch (args.length) {
             case 0:
-                System.out.println("type \"todo help [command]\" for command specific information" + "\n" +
+                System.out.println("for command specific information type: todo help [command]" + "\n" +
                         "commands, categories, and filters are not case sensitive" + "\n\n" +
                         "\t\t" + "Commands" + "\n\n" +
                         "  " + String.format("%-20s%s", "new", "creates a new todo") + "\n" +
@@ -398,7 +397,7 @@ public class Main {
                         "  " + String.format("%-20s%s", "UntickedtoTicked", "sorts todos from unticked to ticked"));
                 break;
             case 1:
-                switch (args[0]) {
+                switch (args[0].toLowerCase()) {
                     case "new":
                     case "add":
                         System.out.println("> todo new <title> [description]");
@@ -424,11 +423,11 @@ public class Main {
                     case "sort":
                         System.out.println("> todo sort [category] <filter>");
                         break;
-                    case "deleteAll":
+                    case "deleteall":
                         System.out.println("> todo deleteAll [category]");
                         break;
                     default:
-                        throw new RuntimeException("unexpected attribute");
+                        throw new RuntimeException("> unexpected argument, for help type: todo help");
                 }
                 break;
         default:
@@ -437,7 +436,7 @@ public class Main {
     }
 
     private static void commandLs(String[] args) {
-        String unexpectedArgument = "> unexpected argument; type \"todo help\" for help";
+        String unexpectedArgument = "> unexpected argument, for help type: todo help";
 
         switch (args.length) {
             case 0:
@@ -488,7 +487,7 @@ public class Main {
 
                 break;
             default:
-                throw new RuntimeException("> command should be: \"todo ls [category] [filter]\"");
+                throw new RuntimeException("> command should be: todo ls [category] [filter]");
         }
     }
 
@@ -688,20 +687,20 @@ public class Main {
 
                 number = 1000;
             } catch (IOException e) {
-                throw new RuntimeException("error");
+                throw new RuntimeException("> could not create ID file");
             }
         } else {
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 number = Long.parseLong(reader.readLine()) + 1;
             } catch (IOException e) {
-                throw new RuntimeException("error at else bufferedReader create ID");
+                throw new RuntimeException("> could not read ID file");
             }
         }
 
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
             writer.write(Long.toString(number));
         } catch (IOException e) {
-            throw new RuntimeException("error at bufferedWriter create ID");
+            throw new RuntimeException("> could not write ID file");
         }
 
         return number;
