@@ -37,7 +37,7 @@ public class Main {
      */
 
     public static void main(String[] args) {
-        System.out.println("!");
+        System.out.println();
 
         try {
             run(args);
@@ -45,7 +45,7 @@ public class Main {
             System.out.println(e.getMessage());
         }
 
-        System.out.println("!");
+        System.out.println();
     } //ideas: switch to json, categories for todos, reminder/priority/deadline, id starting at 1, consolen handle, java native, enum, file.delete()
 
     private static void run(String[] args) {

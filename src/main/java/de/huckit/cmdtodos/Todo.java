@@ -77,11 +77,11 @@ public class Todo implements Serializable {
     }
 
     public String forList() {
-        return "> " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + title + shortenDescription();
+        return " " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + title + shortenDescription();
     }
 
     public String forListID() {
-        return "> " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + id + " - " + title + shortenDescription();
+        return " " + (ticked ? (ANSI_GREEN + "O" + ANSI_RESET) : (ANSI_RED + "X" + ANSI_RESET)) + " - " + id + " - " + title + shortenDescription();
     }
 
     private String shortenDescription() {
