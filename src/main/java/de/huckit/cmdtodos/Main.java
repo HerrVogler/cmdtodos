@@ -288,10 +288,14 @@ public class Main {
             case 2:
                 switch (args[0].toLowerCase()) {
                     case "unticked":
+                        List<Todo> ticked = getTickedOrUnticked(true);
                         todos = filterSelection(getTickedOrUnticked(false), args[1].toLowerCase(), unknownArgument);
+                        todos.addAll(ticked);
                         break;
                     case "ticked":
+                        List<Todo> unticked = getTickedOrUnticked(false);
                         todos = filterSelection(getTickedOrUnticked(true), args[1].toLowerCase(), unknownArgument);
+                        todos.addAll(unticked);
                         break;
                     case "all":
                         todos = filterSelection(todos, args[1].toLowerCase(), unknownArgument);
