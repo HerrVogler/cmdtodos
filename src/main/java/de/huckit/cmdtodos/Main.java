@@ -283,18 +283,18 @@ public class Main {
 
         switch (args.length) {
             case 1:
-                todos = filterSelection(todos, args[0].toLowerCase(), true, unknownArgument);
+                todos = filterSelection(todos, args[0].toLowerCase(), unknownArgument);
                 break;
             case 2:
                 switch (args[0].toLowerCase()) {
                     case "unticked":
-                        todos = filterSelection(getTickedOrUnticked(false), args[1].toLowerCase(), false, unknownArgument);
+                        todos = filterSelection(getTickedOrUnticked(false), args[1].toLowerCase(), unknownArgument);
                         break;
                     case "ticked":
-                        todos = filterSelection(getTickedOrUnticked(true), args[1].toLowerCase(), false, unknownArgument);
+                        todos = filterSelection(getTickedOrUnticked(true), args[1].toLowerCase(), unknownArgument);
                         break;
                     case "all":
-                        todos = filterSelection(todos, args[1].toLowerCase(), true, unknownArgument);
+                        todos = filterSelection(todos, args[1].toLowerCase(), unknownArgument);
                         break;
                     default:
                         throw new RuntimeException(unknownArgument);
@@ -453,38 +453,24 @@ public class Main {
                     case "all":
                         list(todos);
                         break;
-                    case "oldtonew":
-                        list(oldtonew(getTickedOrUnticked(false)));
-                        break;
-                    case "newtoold":
-                        list(newtoold(getTickedOrUnticked(false)));
-                        break;
-                    case "atoz":
-                        list(atoz(getTickedOrUnticked(false)));
-                        break;
-                    case "ztoa":
-                        list(ztoa(getTickedOrUnticked(false)));
-                        break;
                     default:
-                        throw new RuntimeException(unexpectedArgument);
+                        list(filterSelection(getTickedOrUnticked(false), args[0], unexpectedArgument));
                 }
-
                 break;
             case 2:
                 switch (args[0]) {
+                    case "unticked":
+                        list(filterSelection(getTickedOrUnticked(false), args[1], unexpectedArgument));
+                        break;
                     case "ticked":
-                        list(filterSelection(getTickedOrUnticked(true), args[1], false, unexpectedArgument));
+                        list(filterSelection(getTickedOrUnticked(true), args[1], unexpectedArgument));
                         break;
                     case "all":
-                        list(filterSelection(todos, args[1], true, unexpectedArgument));
-                        break;
-                    case "unticked":
-                        list(filterSelection(getTickedOrUnticked(false), args[1], false, unexpectedArgument));
+                        list(filterSelection(todos, args[1], unexpectedArgument));
                         break;
                     default:
                         throw new RuntimeException(unexpectedArgument);
                 }
-
                 break;
             default:
                 throw new RuntimeException("> command should be: todo ls [category] [filter]");
@@ -596,47 +582,28 @@ public class Main {
     return number;
 } // Only used in case more than one t0do is available
 
-    private static List<Todo> filterSelection(List<Todo> values, String argument, boolean includeTickedFilters, String defaultMessage) {
-        if (includeTickedFilters) {
-            switch (argument.toLowerCase()) {
-                case "newtoold":
-                    newtoold(values);
-                    break;
-                case "oldtonew":
-                    oldtonew(values);
-                    break;
-                case "atoz":
-                    atoz(values);
-                    break;
-                case "ztoa":
-                    ztoa(values);
-                    break;
-                case "tickedtounticked":
-                    values = tickedtounticked(values);
-                    break;
-                case "untickedtoticked":
-                    values = untickedtoticked(values);
-                    break;
-                default:
-                    throw new RuntimeException(defaultMessage);
-            }
-        } else {
-            switch (argument.toLowerCase()) {
-                case "newtoold":
-                    newtoold(values);
-                    break;
-                case "oldtonew":
-                    oldtonew(values);
-                    break;
-                case "atoz":
-                    atoz(values);
-                    break;
-                case "ztoa":
-                    ztoa(values);
-                    break;
-                default:
-                    throw new RuntimeException(defaultMessage);
-            }
+    private static List<Todo> filterSelection(List<Todo> values, String argument, String defaultMessage) {
+        switch (argument.toLowerCase()) {
+            case "newtoold":
+                newtoold(values);
+                break;
+            case "oldtonew":
+                oldtonew(values);
+                break;
+            case "atoz":
+                atoz(values);
+                break;
+            case "ztoa":
+                ztoa(values);
+                break;
+            case "tickedtounticked":
+                values = tickedtounticked(values);
+                break;
+            case "untickedtoticked":
+                values = untickedtoticked(values);
+                break;
+            default:
+                throw new RuntimeException(defaultMessage);
         }
 
         return values;
