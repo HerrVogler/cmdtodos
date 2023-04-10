@@ -73,6 +73,7 @@ public class Main {
 
         switch (command.toLowerCase()) {
             case "new":
+            case "create":
             case "add":
                 commandNew(arguments);
                 break;
@@ -82,6 +83,7 @@ public class Main {
             case "untick":
                 commandTickAndUntick(arguments, true);
                 break;
+            case "list":
             case "ls":
                 commandLs(arguments);
                 break;
