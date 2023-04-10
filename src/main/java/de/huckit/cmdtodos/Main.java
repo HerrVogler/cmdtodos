@@ -405,9 +405,11 @@ public class Main {
             case 1:
                 switch (args[0].toLowerCase()) {
                     case "new":
+                    case "create":
                     case "add":
                         System.out.println("> todo new <title> [description]");
                         break;
+                    case "list":
                     case "ls":
                         System.out.println("> todo ls [category] [filter]");
                         break;
